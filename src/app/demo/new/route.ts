@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { getDemoAdminClient } from "@/lib/supabase/admin";
 import {
+  DEFAULT_ROOMS,
   DEFAULT_SECTIONS,
   DEFAULT_STAGES,
   DEFAULT_IDENTITY,
@@ -52,6 +53,7 @@ export async function POST() {
       week: 1,
       total_weeks: 20,
       live: false,
+      room_schema: DEFAULT_ROOMS,
       section_schema: DEFAULT_SECTIONS,
       stage_config: DEFAULT_STAGES,
     });

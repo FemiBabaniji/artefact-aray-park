@@ -3,7 +3,10 @@
 
 import { getAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import type { Section, SectionStatus } from "@/types/section";
+import type { Section } from "@/types/section";
+
+// Legacy section status (from sections table - doesn't include "ongoing")
+type LegacySectionStatus = "empty" | "in_progress" | "submitted" | "reviewed" | "accepted";
 
 // Use admin client for server-side reads (bypasses RLS when no user session)
 async function getReadClient() {
@@ -16,7 +19,7 @@ type DbSectionRow = {
   id: string;
   key: string;
   label: string;
-  status: SectionStatus;
+  status: LegacySectionStatus;
   evidence: string;
   cp: number;
   feedback: string | null;
@@ -26,9 +29,9 @@ type DbSectionRow = {
 
 function mapSection(row: DbSectionRow): Section {
   return {
-    id: row.key as Section["id"],
+    id: row.key,
     label: row.label,
-    status: row.status as SectionStatus,
+    status: row.status,
     evidence: row.evidence,
     cp: row.cp as 1 | 2,
     feedback: row.feedback ?? undefined,
@@ -73,7 +76,7 @@ export async function updateSectionFromDb(
   memberId: string,
   sectionKey: string,
   updates: {
-    status?: SectionStatus;
+    status?: LegacySectionStatus;
     evidence?: string;
     feedback?: string;
     feedbackBy?: string;

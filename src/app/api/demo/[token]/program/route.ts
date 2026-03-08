@@ -47,12 +47,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     // Parse request body
     const body = await request.json();
-    const { section_schema, stage_config } = body;
+    const { room_schema, section_schema, stage_config } = body;
 
     // Update program
     const { error } = await supabase
       .from("programs")
       .update({
+        ...(room_schema !== undefined && { room_schema }),
         ...(section_schema !== undefined && { section_schema }),
         ...(stage_config !== undefined && { stage_config }),
       })

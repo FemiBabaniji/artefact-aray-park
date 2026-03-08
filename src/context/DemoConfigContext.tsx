@@ -9,8 +9,31 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import type { Pace, FieldType } from "@/types/room";
 
-// Types for demo configuration
+// Field definition for structured rooms
+export type RoomFieldConfig = {
+  fieldKey: string;
+  label: string;
+  fieldType: FieldType;
+  options?: string[];     // for select fields
+  required: boolean;
+  order: number;
+};
+
+// Room configuration type (v2 - rooms are named spaces, members add blocks)
+export type RoomConfig = {
+  id: string;
+  label: string;
+  purpose?: string;       // instruction to the member
+  pace: Pace;             // foundation | development | ongoing
+  isPublic: boolean;
+  isStructured: boolean;  // if true, shows form fields instead of block composer
+  fields?: RoomFieldConfig[]; // only for structured rooms
+  order: number;
+};
+
+// Legacy section config (for backwards compatibility)
 export type SectionConfig = {
   id: string;
   label: string;
@@ -32,15 +55,19 @@ export type IdentityConfig = {
 
 export type DemoConfig = {
   identity: IdentityConfig;
-  sections: SectionConfig[];
+  rooms: RoomConfig[];
   stages: StageConfig[];
+  // Legacy - for backwards compatibility
+  sections: SectionConfig[];
 };
 
 type DemoConfigContextValue = {
   config: DemoConfig;
   updateIdentity: (partial: Partial<IdentityConfig>) => void;
-  updateSections: (sections: SectionConfig[]) => void;
+  updateRooms: (rooms: RoomConfig[]) => void;
   updateStages: (stages: StageConfig[]) => void;
+  // Legacy
+  updateSections: (sections: SectionConfig[]) => void;
   isSaving: boolean;
   showExpiryWarning: boolean;
   isExpired: boolean;
@@ -48,7 +75,21 @@ type DemoConfigContextValue = {
 
 const DemoConfigCtx = createContext<DemoConfigContextValue | null>(null);
 
-// Default section schema matching INIT from seed.ts
+// Default room schema (v2 - rooms are named spaces, no types)
+const DEFAULT_ROOMS: RoomConfig[] = [
+  { id: "practice", label: "Your practice", purpose: "What is your practice and why do you make it?", pace: "foundation", isPublic: true, isStructured: false, order: 0 },
+  { id: "focus", label: "What you're working on", purpose: "The specific project or question you're exploring right now", pace: "foundation", isPublic: true, isStructured: false, order: 1 },
+  { id: "material", label: "Your materials", purpose: "What you work with and where you get it", pace: "foundation", isPublic: true, isStructured: false, order: 2 },
+  { id: "influences", label: "Who shaped you", purpose: "Artists, thinkers, or movements that inform your work", pace: "foundation", isPublic: true, isStructured: false, order: 3 },
+  { id: "references", label: "References", purpose: "Images, links, and references that inform your work", pace: "ongoing", isPublic: false, isStructured: false, order: 4 },
+  { id: "series", label: "Your body of work", purpose: "The projects that belong together under this program", pace: "development", isPublic: true, isStructured: false, order: 5 },
+  { id: "works", label: "Your work", purpose: "Documentation of finished pieces", pace: "development", isPublic: true, isStructured: false, order: 6 },
+  { id: "showreel", label: "Showreel", purpose: "Link your primary video, audio, or interactive work", pace: "ongoing", isPublic: true, isStructured: false, order: 7 },
+  { id: "exhibition", label: "Where you want to show", purpose: "The venues, contexts, or audiences you're working toward", pace: "development", isPublic: true, isStructured: false, order: 8 },
+  { id: "collab", label: "Who you want to work with", purpose: "Collaborators, institutions, or communities you're reaching out to", pace: "development", isPublic: true, isStructured: false, order: 9 },
+];
+
+// Legacy section schema (for backwards compatibility)
 const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: "practice", label: "Practice Statement", cp: 1, order: 0 },
   { id: "focus", label: "Current Focus", cp: 1, order: 1 },
@@ -76,6 +117,30 @@ const DEFAULT_IDENTITY: IdentityConfig = {
   logoUrl: null,
 };
 
+// Convert rooms to legacy sections for backwards compatibility
+function roomsToSections(rooms: RoomConfig[]): SectionConfig[] {
+  return rooms
+    .filter((r) => !r.isStructured) // Non-structured rooms map to text sections
+    .map((r) => ({
+      id: r.id,
+      label: r.label,
+      cp: r.pace === "foundation" ? 1 : 2,
+      order: r.order,
+    })) as SectionConfig[];
+}
+
+// Convert legacy sections to rooms
+function sectionsToRooms(sections: SectionConfig[]): RoomConfig[] {
+  return sections.map((s) => ({
+    id: s.id,
+    label: s.label,
+    pace: s.cp === 1 ? "foundation" : "development" as Pace,
+    isPublic: true,
+    isStructured: false,
+    order: s.order,
+  }));
+}
+
 type DemoConfigProviderProps = {
   children: ReactNode;
   token: string;
@@ -90,15 +155,22 @@ export function DemoConfigProvider({
   initialConfig,
 }: DemoConfigProviderProps) {
   // Merge initial config with defaults
-  const [config, setConfig] = useState<DemoConfig>(() => ({
-    identity: { ...DEFAULT_IDENTITY, ...initialConfig?.identity },
-    sections: initialConfig?.sections?.length
-      ? initialConfig.sections
-      : DEFAULT_SECTIONS,
-    stages: initialConfig?.stages?.length
-      ? initialConfig.stages
-      : DEFAULT_STAGES,
-  }));
+  const [config, setConfig] = useState<DemoConfig>(() => {
+    const rooms = initialConfig?.rooms?.length
+      ? initialConfig.rooms
+      : initialConfig?.sections?.length
+      ? sectionsToRooms(initialConfig.sections)
+      : DEFAULT_ROOMS;
+
+    return {
+      identity: { ...DEFAULT_IDENTITY, ...initialConfig?.identity },
+      rooms,
+      sections: roomsToSections(rooms),
+      stages: initialConfig?.stages?.length
+        ? initialConfig.stages
+        : DEFAULT_STAGES,
+    };
+  });
 
   const [isSaving, setIsSaving] = useState(false);
   const [showExpiryWarning, setShowExpiryWarning] = useState(false);
@@ -132,6 +204,8 @@ export function DemoConfigProvider({
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
+                room_schema: newConfig.rooms,
+                // Also send legacy format for backwards compat
                 section_schema: newConfig.sections,
                 stage_config: newConfig.stages,
               }),
@@ -162,15 +236,28 @@ export function DemoConfigProvider({
     [debouncedSave]
   );
 
-  const updateSections = useCallback(
-    (sections: SectionConfig[]) => {
+  const updateRooms = useCallback(
+    (rooms: RoomConfig[]) => {
       setConfig((prev) => {
-        const newConfig = { ...prev, sections };
+        const newConfig = {
+          ...prev,
+          rooms,
+          sections: roomsToSections(rooms),
+        };
         debouncedSave(newConfig);
         return newConfig;
       });
     },
     [debouncedSave]
+  );
+
+  // Legacy - converts sections to rooms
+  const updateSections = useCallback(
+    (sections: SectionConfig[]) => {
+      const rooms = sectionsToRooms(sections);
+      updateRooms(rooms);
+    },
+    [updateRooms]
   );
 
   const updateStages = useCallback(
@@ -193,7 +280,7 @@ export function DemoConfigProvider({
       return;
     }
 
-    const warnAt = msUntilExpiry - 10 * 60 * 1000; // 10 min before expiry
+    const warnAt = msUntilExpiry - 10 * 60 * 1000;
 
     const warnTimer =
       warnAt > 0
@@ -219,6 +306,7 @@ export function DemoConfigProvider({
   const value: DemoConfigContextValue = {
     config,
     updateIdentity,
+    updateRooms,
     updateSections,
     updateStages,
     isSaving,
@@ -240,4 +328,4 @@ export function useDemoConfig() {
 }
 
 // Export defaults for use elsewhere
-export { DEFAULT_SECTIONS, DEFAULT_STAGES, DEFAULT_IDENTITY };
+export { DEFAULT_ROOMS, DEFAULT_SECTIONS, DEFAULT_STAGES, DEFAULT_IDENTITY };

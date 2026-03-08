@@ -1,6 +1,10 @@
 -- Artefact Platform Schema
 -- Run this in Supabase SQL Editor or via CLI: supabase db push
 
+-- Drop views first (they may exist from a previous migration with different columns)
+DROP VIEW IF EXISTS member_progress CASCADE;
+DROP VIEW IF EXISTS at_risk_members CASCADE;
+
 -- Extensions
 create extension if not exists "uuid-ossp";
 

@@ -1,363 +1,409 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useC } from "@/hooks/useC";
-import { useDemoConfig, type SectionConfig } from "@/context/DemoConfigContext";
+import { useDemoConfig, type RoomConfig } from "@/context/DemoConfigContext";
 import { Lbl } from "@/components/primitives/Lbl";
-import { Btn } from "@/components/primitives/Btn";
+import { BlockComposer } from "@/components/room/BlockComposer";
+import type { Pace, Block } from "@/types/room";
 
-export function SectionsStep() {
+const SP = { type: "spring", stiffness: 300, damping: 30 } as const;
+
+export { RoomsStep as SectionsStep };
+
+export function RoomsStep() {
   const C = useC();
-  const { config, updateSections } = useDemoConfig();
+  const { config, updateRooms } = useDemoConfig();
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  // Track which room is active in each column (2x2 accordion)
+  const [activeL, setActiveL] = useState(0);
+  const [activeR, setActiveR] = useState(0);
 
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
+  // Split rooms into left/right columns
+  const leftRooms = config.rooms.filter((_, i) => i % 2 === 0);
+  const rightRooms = config.rooms.filter((_, i) => i % 2 === 1);
 
-      if (over && active.id !== over.id) {
-        const oldIndex = config.sections.findIndex((s) => s.id === active.id);
-        const newIndex = config.sections.findIndex((s) => s.id === over.id);
-
-        const newSections = arrayMove(config.sections, oldIndex, newIndex).map(
-          (s, i) => ({ ...s, order: i })
-        );
-        updateSections(newSections);
-      }
-    },
-    [config.sections, updateSections]
-  );
-
-  const handleLabelChange = useCallback(
-    (id: string, label: string) => {
-      const newSections = config.sections.map((s) =>
-        s.id === id ? { ...s, label } : s
+  const handleUpdateRoom = useCallback(
+    (id: string, updates: Partial<RoomConfig>) => {
+      const newRooms = config.rooms.map((r) =>
+        r.id === id ? { ...r, ...updates } : r
       );
-      updateSections(newSections);
+      updateRooms(newRooms);
     },
-    [config.sections, updateSections]
+    [config.rooms, updateRooms]
   );
 
-  const handleCpToggle = useCallback(
-    (id: string) => {
-      const newSections = config.sections.map((s) =>
-        s.id === id ? { ...s, cp: s.cp === 1 ? 2 : 1 } : s
-      ) as SectionConfig[];
-      updateSections(newSections);
-    },
-    [config.sections, updateSections]
-  );
-
-  const handleDelete = useCallback(
-    (id: string) => {
-      if (config.sections.length <= 3) return; // Minimum 3 sections
-      const newSections = config.sections
-        .filter((s) => s.id !== id)
-        .map((s, i) => ({ ...s, order: i }));
-      updateSections(newSections);
-    },
-    [config.sections, updateSections]
-  );
-
-  const handleAdd = useCallback(() => {
-    const newId = `section_${Date.now()}`;
-    const newSections = [
-      ...config.sections,
+  const handleAddRoom = useCallback(() => {
+    const newId = `room_${Date.now()}`;
+    const newRooms: RoomConfig[] = [
+      ...config.rooms,
       {
         id: newId,
-        label: "New Section",
-        cp: 2 as const,
-        order: config.sections.length,
+        label: "New room",
+        purpose: "",
+        pace: "development",
+        isPublic: true,
+        isStructured: false,
+        order: config.rooms.length,
       },
     ];
-    updateSections(newSections);
-  }, [config.sections, updateSections]);
+    updateRooms(newRooms);
+  }, [config.rooms, updateRooms]);
 
-  const cp1Count = config.sections.filter((s) => s.cp === 1).length;
-  const cp2Count = config.sections.filter((s) => s.cp === 2).length;
+  const handleDeleteRoom = useCallback(
+    (id: string) => {
+      if (config.rooms.length <= 2) return;
+      const newRooms = config.rooms
+        .filter((r) => r.id !== id)
+        .map((r, i) => ({ ...r, order: i }));
+      updateRooms(newRooms);
+    },
+    [config.rooms, updateRooms]
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div>
-        <h2
-          style={{
-            fontSize: 18,
-            fontWeight: 500,
-            color: C.t1,
-            marginBottom: 6,
-          }}
-        >
-          Section Schema
-        </h2>
-        <p style={{ fontSize: 13, color: C.t3, lineHeight: 1.5 }}>
-          Define the sections members complete in your program. Drag to reorder,
-          click labels to rename, toggle CP badges to change checkpoint
-          assignment.
-        </p>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Intro text */}
+      <p style={{ fontSize: 12, color: C.t3, lineHeight: 1.5, margin: "0 0 14px" }}>
+        Click a room to expand. Members will add blocks directly inside.
+      </p>
 
-      {/* Stats */}
-      <div style={{ display: "flex", gap: 16 }}>
-        <div
-          style={{
-            padding: "10px 14px",
-            background: C.edge + "30",
-            borderRadius: 6,
-          }}
-        >
-          <span className="mono" style={{ fontSize: 10, color: C.t3 }}>
-            CP1: {cp1Count} sections
-          </span>
-        </div>
-        <div
-          style={{
-            padding: "10px 14px",
-            background: C.edge + "30",
-            borderRadius: 6,
-          }}
-        >
-          <span className="mono" style={{ fontSize: 10, color: C.t3 }}>
-            CP2: {cp2Count} sections
-          </span>
-        </div>
-      </div>
-
-      {/* Sortable list */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
+      {/* 2x2 Accordion Grid */}
+      <div
+        style={{
+          flex: 1,
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 1,
+          background: C.sep,
+          border: `1px solid ${C.edge}`,
+          borderRadius: 10,
+          overflow: "hidden",
+          minHeight: 0,
+        }}
       >
-        <SortableContext
-          items={config.sections.map((s) => s.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {config.sections.map((section, index) => (
-              <SortableItem
-                key={section.id}
-                section={section}
-                index={index}
-                onLabelChange={handleLabelChange}
-                onCpToggle={handleCpToggle}
-                onDelete={handleDelete}
-                canDelete={config.sections.length > 3}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+        {/* Left column */}
+        <div style={{ display: "flex", flexDirection: "column", background: C.void }}>
+          {leftRooms.map((room, i) => (
+            <RoomQuad
+              key={room.id}
+              room={room}
+              isActive={activeL === i}
+              onActivate={() => setActiveL(i)}
+              onUpdate={(updates) => handleUpdateRoom(room.id, updates)}
+              onDelete={() => handleDeleteRoom(room.id)}
+              canDelete={config.rooms.length > 2}
+            />
+          ))}
+        </div>
 
-      {/* Add button */}
-      <Btn onClick={handleAdd} style={{ alignSelf: "flex-start" }}>
-        + Add section
-      </Btn>
+        {/* Right column */}
+        <div style={{ display: "flex", flexDirection: "column", background: C.void }}>
+          {rightRooms.map((room, i) => (
+            <RoomQuad
+              key={room.id}
+              room={room}
+              isActive={activeR === i}
+              onActivate={() => setActiveR(i)}
+              onUpdate={(updates) => handleUpdateRoom(room.id, updates)}
+              onDelete={() => handleDeleteRoom(room.id)}
+              canDelete={config.rooms.length > 2}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Add room */}
+      <button
+        onClick={handleAddRoom}
+        style={{
+          marginTop: 12,
+          padding: "8px 0",
+          fontSize: 11,
+          color: C.t3,
+          background: "none",
+          border: `1px dashed ${C.edge}`,
+          borderRadius: 6,
+          cursor: "pointer",
+        }}
+      >
+        + Add room
+      </button>
     </div>
   );
 }
 
-// Sortable item component
-type SortableItemProps = {
-  section: SectionConfig;
-  index: number;
-  onLabelChange: (id: string, label: string) => void;
-  onCpToggle: (id: string) => void;
-  onDelete: (id: string) => void;
+// ─────────────────────────────────────────────────────────────────────────────
+// Room Quad - the accordion card that IS the editing surface
+// ─────────────────────────────────────────────────────────────────────────────
+
+type RoomQuadProps = {
+  room: RoomConfig;
+  isActive: boolean;
+  onActivate: () => void;
+  onUpdate: (updates: Partial<RoomConfig>) => void;
+  onDelete: () => void;
   canDelete: boolean;
 };
 
-function SortableItem({
-  section,
-  index,
-  onLabelChange,
-  onCpToggle,
+function RoomQuad({
+  room,
+  isActive,
+  onActivate,
+  onUpdate,
   onDelete,
   canDelete,
-}: SortableItemProps) {
+}: RoomQuadProps) {
   const C = useC();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(section.label);
+  const [editingLabel, setEditingLabel] = useState(false);
+  const [editingPurpose, setEditingPurpose] = useState(false);
+  const [labelValue, setLabelValue] = useState(room.label);
+  const [purposeValue, setPurposeValue] = useState(room.purpose || "");
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: section.id });
+  // Demo blocks state (not persisted, just for preview)
+  const [demoBlocks, setDemoBlocks] = useState<Block[]>([]);
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+  const paceColors: Record<Pace, string> = {
+    foundation: C.green,
+    development: C.blue,
+    ongoing: C.t3,
   };
 
-  const handleStartEdit = () => {
-    setEditValue(section.label);
-    setIsEditing(true);
-  };
-
-  const handleFinishEdit = () => {
-    if (editValue.trim()) {
-      onLabelChange(section.id, editValue.trim());
+  const handleLabelSubmit = () => {
+    if (labelValue.trim() && labelValue !== room.label) {
+      onUpdate({ label: labelValue.trim() });
+    } else {
+      setLabelValue(room.label);
     }
-    setIsEditing(false);
+    setEditingLabel(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleFinishEdit();
-    } else if (e.key === "Escape") {
-      setEditValue(section.label);
-      setIsEditing(false);
+  const handlePurposeSubmit = () => {
+    if (purposeValue !== room.purpose) {
+      onUpdate({ purpose: purposeValue || undefined });
     }
+    setEditingPurpose(false);
   };
 
   return (
     <motion.div
-      ref={setNodeRef}
+      layout
+      transition={SP}
+      onClick={onActivate}
       style={{
-        ...style,
+        flex: isActive ? 3 : 1,
+        minHeight: 0,
         display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "10px 14px",
-        background: C.bg,
-        border: `1px solid ${C.edge}`,
-        borderRadius: 8,
+        flexDirection: "column",
+        borderBottom: `1px solid ${C.sep}`,
+        cursor: "pointer",
+        overflow: "hidden",
       }}
-      whileHover={{ borderColor: C.t4 }}
     >
-      {/* Drag handle */}
+      {/* Header */}
       <div
-        {...attributes}
-        {...listeners}
         style={{
-          cursor: "grab",
-          padding: "4px",
-          color: C.t4,
           display: "flex",
-          flexDirection: "column",
-          gap: 2,
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 14px",
+          flexShrink: 0,
         }}
       >
-        <div style={{ width: 12, height: 2, background: C.t4, borderRadius: 1 }} />
-        <div style={{ width: 12, height: 2, background: C.t4, borderRadius: 1 }} />
-      </div>
-
-      {/* Index */}
-      <span
-        className="mono"
-        style={{ fontSize: 10, color: C.t4, width: 16, textAlign: "center" }}
-      >
-        {index + 1}
-      </span>
-
-      {/* Label (editable) */}
-      <div style={{ flex: 1 }}>
-        {isEditing ? (
+        {/* Label */}
+        {editingLabel ? (
           <input
             type="text"
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={handleFinishEdit}
-            onKeyDown={handleKeyDown}
+            value={labelValue}
+            onChange={(e) => setLabelValue(e.target.value)}
+            onBlur={handleLabelSubmit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleLabelSubmit();
+              if (e.key === "Escape") {
+                setLabelValue(room.label);
+                setEditingLabel(false);
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
             autoFocus
             style={{
-              width: "100%",
-              fontSize: 13,
+              fontSize: 11,
+              fontWeight: 500,
               color: C.t1,
               background: "transparent",
               border: "none",
               outline: "none",
               padding: 0,
+              width: 120,
             }}
           />
         ) : (
-          <button
-            onClick={handleStartEdit}
-            style={{
-              fontSize: 13,
-              color: C.t1,
-              background: "none",
-              border: "none",
-              cursor: "text",
-              textAlign: "left",
-              padding: 0,
+          <Lbl
+            style={{ fontSize: 10, cursor: "text" }}
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              setEditingLabel(true);
             }}
           >
-            {section.label}
-          </button>
+            {room.label}
+          </Lbl>
         )}
-      </div>
 
-      {/* CP toggle */}
-      <button
-        onClick={() => onCpToggle(section.id)}
-        className="mono"
-        style={{
-          fontSize: 9,
-          padding: "4px 8px",
-          borderRadius: 4,
-          background: section.cp === 1 ? C.green + "20" : C.blue + "20",
-          color: section.cp === 1 ? C.green : C.blue,
-          border: "none",
-          cursor: "pointer",
-        }}
-      >
-        CP{section.cp}
-      </button>
-
-      {/* Delete button (shown on hover via CSS-in-JS won't work, so always show if canDelete) */}
-      {canDelete && (
-        <button
-          onClick={() => onDelete(section.id)}
+        {/* Pace badge */}
+        <select
+          value={room.pace}
+          onChange={(e) => {
+            e.stopPropagation();
+            onUpdate({ pace: e.target.value as Pace });
+          }}
+          onClick={(e) => e.stopPropagation()}
           style={{
-            padding: "4px 8px",
-            fontSize: 11,
-            color: C.t4,
-            background: "none",
+            fontSize: 8,
+            padding: "2px 6px",
+            borderRadius: 3,
+            background: paceColors[room.pace] + "20",
+            color: paceColors[room.pace],
             border: "none",
             cursor: "pointer",
-            opacity: 0.5,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = "1";
-            e.currentTarget.style.color = "#ef4444";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "0.5";
-            e.currentTarget.style.color = C.t4;
+            fontFamily: "var(--font-mono)",
+            textTransform: "uppercase",
           }}
         >
-          Remove
-        </button>
-      )}
+          <option value="foundation">Foundation</option>
+          <option value="development">Development</option>
+          <option value="ongoing">Ongoing</option>
+        </select>
+      </div>
+
+      {/* Expanded content */}
+      <AnimatePresence mode="wait">
+        {isActive ? (
+          <motion.div
+            key="expanded"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              flex: 1,
+              overflow: "auto",
+              padding: "0 14px 14px",
+              minHeight: 0,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Purpose (editable) */}
+            <div style={{ marginBottom: 12 }}>
+              {editingPurpose ? (
+                <textarea
+                  value={purposeValue}
+                  onChange={(e) => setPurposeValue(e.target.value)}
+                  onBlur={handlePurposeSubmit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setPurposeValue(room.purpose || "");
+                      setEditingPurpose(false);
+                    }
+                  }}
+                  autoFocus
+                  placeholder="What is this room for?"
+                  style={{
+                    width: "100%",
+                    fontSize: 12,
+                    color: C.t2,
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    padding: 0,
+                    resize: "none",
+                    lineHeight: 1.5,
+                    minHeight: 36,
+                  }}
+                />
+              ) : (
+                <p
+                  onClick={() => setEditingPurpose(true)}
+                  style={{
+                    fontSize: 12,
+                    color: room.purpose ? C.t2 : C.t4,
+                    lineHeight: 1.5,
+                    margin: 0,
+                    cursor: "text",
+                  }}
+                >
+                  {room.purpose || "Click to add purpose..."}
+                </p>
+              )}
+            </div>
+
+            {/* BlockComposer preview */}
+            <div
+              style={{
+                padding: 10,
+                background: C.edge + "20",
+                borderRadius: 6,
+                marginBottom: 12,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 9,
+                  color: C.t4,
+                  marginBottom: 8,
+                  textTransform: "uppercase",
+                  letterSpacing: ".05em",
+                }}
+              >
+                Member view preview
+              </div>
+              <BlockComposer
+                blocks={demoBlocks}
+                onChange={setDemoBlocks}
+              />
+            </div>
+
+            {/* Delete */}
+            {canDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                style={{
+                  padding: "4px 0",
+                  fontSize: 10,
+                  color: C.t4,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
+                Remove room
+              </button>
+            )}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="collapsed"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.6 }}
+            exit={{ opacity: 0 }}
+            style={{
+              padding: "0 14px 10px",
+              fontSize: 11,
+              color: C.t4,
+              lineHeight: 1.4,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {room.purpose?.slice(0, 40) || "..."}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

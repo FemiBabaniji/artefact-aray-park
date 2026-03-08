@@ -12,7 +12,7 @@ import { PullModal } from "./PullModal";
 import { LinkPreviewGrid } from "@/components/artefact/LinkPreview";
 import { useLinks } from "@/hooks/useLinks";
 import { getSectionName, getSectionSubtitle } from "@/lib/labels";
-import type { Section, SectionKey } from "@/types/section";
+import type { Section } from "@/types/section";
 
 type WsExpandedProps = {
   memberId:     string;
@@ -50,7 +50,7 @@ function insCursor(html: string): void {
   }
 }
 
-const KEYWORDS: Record<SectionKey, string[]> = {
+const KEYWORDS: Record<string, string[]> = {
   material:    ["material", "biolum", "resin", "glass"],
   focus:       ["focus", "developing", "research"],
   practice:    ["practice", "build", "environment", "light"],
@@ -88,9 +88,9 @@ export function WsExpanded({
 
   const suggest = useCallback((content: string): Section | null => {
     const text = content.toLowerCase().replace(/<[^>]+>/g, "");
-    let best: SectionKey | null = null;
+    let best: string | null = null;
     let bs = 0;
-    for (const [id, ks] of Object.entries(KEYWORDS) as [SectionKey, string[]][]) {
+    for (const [id, ks] of Object.entries(KEYWORDS) as [string, string[]][]) {
       const sc = ks.filter(k => text.includes(k)).length;
       if (sc > bs) { bs = sc; best = id; }
     }
@@ -102,7 +102,7 @@ export function WsExpanded({
     setShowPull(true);
   };
 
-  const confirmPull = (sid: SectionKey) => {
+  const confirmPull = (sid: string) => {
     setShowPull(false);
     setPulling(true);
     setSyncing(true);

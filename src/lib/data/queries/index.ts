@@ -17,3 +17,17 @@ export {
   getProgramsFromDb,
   updateProgramWeekFromDb,
 } from "./programs";
+
+export {
+  getRoomsFromDb,
+  getRoomWithContentFromDb,
+  updateRoomStatusFromDb,
+  updateTextContentFromDb,
+  submitRoomFromDb,
+  reviewRoomFromDb,
+  addMediaItemFromDb,
+  deleteMediaItemFromDb,
+  addWorkItemFromDb,
+  updateWorkItemFromDb,
+  deleteWorkItemFromDb,
+} from "./rooms";

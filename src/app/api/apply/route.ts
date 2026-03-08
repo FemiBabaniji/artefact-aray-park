@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import type { Pace } from "@/types/room";
 
 const ApplicationSchema = z.object({
   name: z.string().min(1),
@@ -15,7 +16,32 @@ const ApplicationSchema = z.object({
   communityId: z.string().uuid().optional(),
 });
 
-// Default section schema for new artefacts
+// Room config type (v2 - rooms are named spaces, members add blocks)
+type RoomConfig = {
+  id: string;
+  label: string;
+  purpose?: string;
+  pace: Pace;
+  isPublic: boolean;
+  isStructured: boolean;
+  order: number;
+};
+
+// Default room schema for new artefacts (used if program has no room_schema)
+const DEFAULT_ROOMS: RoomConfig[] = [
+  { id: "practice", label: "Your practice", purpose: "What is your practice and why do you make it?", pace: "foundation", isPublic: true, isStructured: false, order: 0 },
+  { id: "focus", label: "What you're working on", purpose: "The specific project or question you're exploring right now", pace: "foundation", isPublic: true, isStructured: false, order: 1 },
+  { id: "material", label: "Your materials", purpose: "What you work with and where you get it", pace: "foundation", isPublic: true, isStructured: false, order: 2 },
+  { id: "influences", label: "Who shaped you", purpose: "Artists, thinkers, or movements that inform your work", pace: "foundation", isPublic: true, isStructured: false, order: 3 },
+  { id: "references", label: "References", purpose: "Images, links, and references that inform your work", pace: "ongoing", isPublic: false, isStructured: false, order: 4 },
+  { id: "series", label: "Your body of work", purpose: "The projects that belong together under this program", pace: "development", isPublic: true, isStructured: false, order: 5 },
+  { id: "works", label: "Your work", purpose: "Documentation of finished pieces", pace: "development", isPublic: true, isStructured: false, order: 6 },
+  { id: "showreel", label: "Showreel", purpose: "Link your primary video, audio, or interactive work", pace: "ongoing", isPublic: true, isStructured: false, order: 7 },
+  { id: "exhibition", label: "Where you want to show", purpose: "The venues, contexts, or audiences you're working toward", pace: "development", isPublic: true, isStructured: false, order: 8 },
+  { id: "collab", label: "Who you want to work with", purpose: "Collaborators, institutions, or communities you're reaching out to", pace: "development", isPublic: true, isStructured: false, order: 9 },
+];
+
+// Legacy section schema (for backwards compatibility with old sections table)
 const SECTION_SCHEMA = [
   { key: "practice", label: "Practice Statement", cp: 1 },
   { key: "focus", label: "Current Focus", cp: 1 },
@@ -134,7 +160,35 @@ export async function POST(request: NextRequest) {
 
     const artefactId = (artefact as { id: string }).id;
 
-    // Create sections
+    // Fetch program's room_schema
+    const { data: program } = await supabase
+      .from("programs")
+      .select("room_schema")
+      .eq("community_id", communityId)
+      .single();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const programData = program as { room_schema?: RoomConfig[] } | null;
+    const roomSchema: RoomConfig[] =
+      programData?.room_schema?.length ? programData.room_schema : DEFAULT_ROOMS;
+
+    // Create rooms from room_schema (v2 - no room types, just pace)
+    const roomsToCreate = roomSchema.map((r) => ({
+      artefact_id: artefactId,
+      key: r.id,
+      label: r.label,
+      purpose: r.purpose || null,
+      pace: r.pace,
+      status: "empty",
+      order_index: r.order,
+      is_public: r.isPublic,
+      is_structured: r.isStructured,
+    }));
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from("rooms") as any).insert(roomsToCreate);
+
+    // Also create legacy sections for backwards compatibility
     const sectionsToCreate = SECTION_SCHEMA.map((s) => ({
       artefact_id: artefactId,
       key: s.key,

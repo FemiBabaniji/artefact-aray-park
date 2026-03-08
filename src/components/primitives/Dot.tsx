@@ -1,12 +1,11 @@
 "use client";
 import { motion } from "framer-motion";
 import { useC } from "@/hooks/useC";
-import { mkST } from "@/lib/status";
-import type { SectionStatus } from "@/types/section";
+import { mkST, type AnyStatus } from "@/lib/status";
 import { FADE } from "@/lib/motion";
 
 type DotProps = {
-  status:     SectionStatus;
+  status:     AnyStatus;
   hideLabel?: boolean;
   size?:      number;
 };

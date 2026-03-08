@@ -41,7 +41,7 @@ async function getProgram(communityId: string) {
 
   const { data } = await supabase
     .from("programs")
-    .select("id, community_id, section_schema, stage_config")
+    .select("id, community_id, room_schema, section_schema, stage_config")
     .eq("community_id", communityId)
     .single();
 
@@ -79,6 +79,9 @@ export default async function DemoLayout({ children, params }: Props) {
   }
 
   // Parse JSON fields
+  const roomSchema = Array.isArray(program.room_schema)
+    ? program.room_schema
+    : [];
   const sectionSchema = Array.isArray(program.section_schema)
     ? program.section_schema
     : [];
@@ -97,6 +100,18 @@ export default async function DemoLayout({ children, params }: Props) {
           accentColor: community.accent_color,
           logoUrl: community.logo_url,
         },
+        rooms: (roomSchema as {
+          id: string;
+          label: string;
+          purpose?: string;
+          pace: "foundation" | "development" | "ongoing";
+          isPublic: boolean;
+          isStructured?: boolean;
+          order: number;
+        }[]).map(r => ({
+          ...r,
+          isStructured: r.isStructured ?? false,
+        })),
         sections: sectionSchema as {
           id: string;
           label: string;

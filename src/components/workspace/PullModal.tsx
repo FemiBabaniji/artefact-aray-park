@@ -6,20 +6,20 @@ import { FADE } from "@/lib/motion";
 import { Btn } from "@/components/primitives/Btn";
 import { Dot } from "@/components/primitives/Dot";
 import { getSectionName, getSectionSubtitle } from "@/lib/labels";
-import type { Section, SectionKey } from "@/types/section";
+import type { Section } from "@/types/section";
 
 type PullModalProps = {
   sections:   Section[];
   suggested:  Section | null;
   evidence?:  string;  // The extracted text being sent
-  onConfirm:  (sid: SectionKey) => void;
+  onConfirm:  (sid: string) => void;
   onDismiss:  () => void;
 };
 
 export function PullModal({ sections, suggested, evidence, onConfirm, onDismiss }: PullModalProps) {
   const C     = useC();
   const avail = sections.filter(s => s.status !== "accepted");
-  const [sel, setSel] = useState<SectionKey>(
+  const [sel, setSel] = useState<string>(
     suggested?.id || avail.find(s => s.status !== "accepted")?.id || sections[0].id
   );
   const [showOther, setShowOther] = useState(false);
