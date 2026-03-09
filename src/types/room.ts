@@ -30,6 +30,11 @@ export type Block = {
   };
   orderIndex: number;
   createdAt?: string;
+  // Freeform canvas positioning
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
 };
 
 // Field definition for structured rooms (stored at program level)

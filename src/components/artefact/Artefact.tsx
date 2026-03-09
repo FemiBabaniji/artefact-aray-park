@@ -511,7 +511,6 @@ function DrillOverlay({ drillKey, member, rooms, onRoomUpdate, avatarSrc, onAvat
                 room={room}
                 isActive={aL === i}
                 onActivate={() => setAL(i)}
-                onUpdate={onRoomUpdate}
                 onFullscreen={() => setFsRoom(room)}
                 role={role}
               />
@@ -525,7 +524,6 @@ function DrillOverlay({ drillKey, member, rooms, onRoomUpdate, avatarSrc, onAvat
                 room={room}
                 isActive={aR === i}
                 onActivate={() => setAR(i)}
-                onUpdate={onRoomUpdate}
                 onFullscreen={() => setFsRoom(room)}
                 role={role}
               />
@@ -577,115 +575,135 @@ function FocusQuad({ profile }: { profile?: MemberProfile }) {
   return <div style={{ fontSize: 14, color: C.t2, lineHeight: 1.82, fontWeight: 400 }}>{profile?.focus || ""}</div>;
 }
 
-// RoomPanel: one room = one quad. Collapsed shows preview, expanded shows BlockComposer.
+// RoomPanel: clean preview card - click to expand, fullscreen to edit
 type RoomPanelProps = {
   room: Room;
   isActive: boolean;
   onActivate: () => void;
-  onUpdate?: (roomId: string, blocks: Block[]) => void;
   onFullscreen?: () => void;
   role: ArtefactRole;
 };
 
-function RoomPanel({ room, isActive, onActivate, onUpdate, onFullscreen, role }: RoomPanelProps) {
+function RoomPanel({ room, isActive, onActivate, onFullscreen }: RoomPanelProps) {
   const C = useC();
+  const [hovered, setHovered] = useState(false);
   const textContent = room.content?.type === "text" ? room.content.data : null;
-
-  // Convert existing content to blocks
-  const blocks: Block[] = textContent?.body
-    ? [{ id: `block_${room.id}`, blockType: "text" as const, content: textContent.body, orderIndex: 0 }]
-    : [];
-
-  const isEmpty = blocks.length === 0;
-  const isEditable = role === "member" && room.status !== "accepted";
-
-  // First block preview text
-  const previewText = blocks[0]?.content?.replace(/<[^>]+>/g, "").slice(0, 60) || "";
+  const body = textContent?.body || "";
+  const plainText = body.replace(/<[^>]+>/g, "").trim();
+  const isEmpty = !plainText;
+  const hasFeedback = !!textContent?.feedback;
 
   return (
     <motion.div
       layout
-      transition={SP}
+      transition={SPF}
       onClick={!isActive ? onActivate : undefined}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         flex: isActive ? 4 : 1,
         minHeight: 0,
         display: "flex",
         flexDirection: "column",
         cursor: isActive ? "default" : "pointer",
-        borderTop: `1px solid ${C.sep}`,
-        paddingTop: 11,
+        borderTop: `1px solid ${hovered && !isActive ? C.blue + "44" : C.sep}`,
+        paddingTop: 10,
         overflow: "hidden",
+        transition: "border-color 0.15s",
       }}
     >
-      {/* Header: label + status + fullscreen */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexShrink: 0 }}>
-        <Lbl>{room.label}</Lbl>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {isActive && onFullscreen && (
-            <Btn onClick={() => onFullscreen()} style={{ fontSize: 9, padding: "2px 6px" }}>
-              ⊡
-            </Btn>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexShrink: 0 }}>
+        <Lbl style={{ color: isActive ? C.t2 : C.t3 }}>{room.label}</Lbl>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {(isActive || hovered) && onFullscreen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.1 }}
+            >
+              <Btn onClick={() => onFullscreen()} style={{ fontSize: 8, padding: "2px 5px" }}>
+                ⊡ open
+              </Btn>
+            </motion.div>
           )}
-          <Dot status={room.status} hideLabel={!isActive} size={isActive ? 6 : 5} />
+          <Dot status={room.status} hideLabel size={5} />
         </div>
       </div>
 
+      {/* Content */}
       <AnimatePresence mode="wait">
         {isActive ? (
-          // Expanded: full block list + composer
           <motion.div
             key="expanded"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.11 }}
-            style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}
+            transition={{ duration: 0.12 }}
+            style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column", gap: 10 }}
           >
-            {/* Purpose as invitation when empty */}
-            {isEmpty && room.prompt && (
-              <p style={{ fontSize: 13, color: C.t3, lineHeight: 1.65, margin: "0 0 16px", fontStyle: "italic" }}>
-                {room.prompt}
-              </p>
-            )}
-
-            {/* BlockComposer */}
-            <div style={{ flex: 1 }}>
-              <BlockComposer
-                blocks={blocks}
-                onChange={(newBlocks) => onUpdate?.(room.id, newBlocks)}
-                readOnly={!isEditable}
-              />
-            </div>
-
-            {/* Mentor feedback */}
-            {textContent?.feedback && (
-              <div style={{
-                marginTop: 12,
-                padding: 10,
-                background: room.status === "reviewed" ? C.amber + "10" : C.green + "10",
-                borderLeft: `2px solid ${room.status === "reviewed" ? C.amber : C.green}`,
-                borderRadius: 4,
-              }}>
-                <div style={{ fontSize: 10, color: room.status === "reviewed" ? C.amber : C.green, marginBottom: 4, fontWeight: 500 }}>
-                  {room.status === "reviewed" ? "Needs revision" : "Approved"}
-                </div>
-                <div style={{ fontSize: 12, color: C.t2, lineHeight: 1.5, fontStyle: "italic" }}>
-                  {textContent.feedback}
-                </div>
+            {isEmpty ? (
+              // Empty state - invitation
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                {room.prompt && (
+                  <p style={{ fontSize: 12, color: C.t4, lineHeight: 1.6, margin: 0, fontStyle: "italic" }}>
+                    {room.prompt}
+                  </p>
+                )}
+                <motion.div
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                  style={{ marginTop: 12 }}
+                >
+                  <Btn onClick={onFullscreen} style={{ fontSize: 10 }}>
+                    ⊡ start writing
+                  </Btn>
+                </motion.div>
               </div>
+            ) : (
+              // Content preview
+              <>
+                <div style={{
+                  flex: 1,
+                  fontSize: 13,
+                  color: C.t2,
+                  lineHeight: 1.7,
+                  overflow: "hidden",
+                }}>
+                  {plainText.length > 180 ? plainText.slice(0, 180) + "..." : plainText}
+                </div>
+                {hasFeedback && (
+                  <div style={{
+                    padding: "8px 10px",
+                    background: room.status === "reviewed" ? C.amber + "08" : C.green + "08",
+                    borderLeft: `2px solid ${room.status === "reviewed" ? C.amber : C.green}`,
+                    borderRadius: 3,
+                    flexShrink: 0,
+                  }}>
+                    <div style={{ fontSize: 9, color: room.status === "reviewed" ? C.amber : C.green, fontWeight: 500, marginBottom: 2 }}>
+                      {room.status === "reviewed" ? "feedback" : "approved"}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.t3, lineHeight: 1.5 }}>
+                      {textContent?.feedback?.slice(0, 80)}...
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </motion.div>
         ) : (
-          // Collapsed: preview
+          // Collapsed - subtle preview
           <motion.div
             key="collapsed"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.6 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            style={{ fontSize: 11, color: C.t4, lineHeight: 1.4 }}
+            style={{ fontSize: 11, color: C.t4, lineHeight: 1.5 }}
           >
-            {previewText || (room.prompt ? room.prompt.slice(0, 40) + "..." : "click to add")}
+            {isEmpty
+              ? (room.prompt ? room.prompt.slice(0, 30) + "..." : "empty")
+              : plainText.slice(0, 40) + (plainText.length > 40 ? "..." : "")
+            }
           </motion.div>
         )}
       </AnimatePresence>
@@ -732,65 +750,64 @@ function RoomFullscreen({ room, onUpdate, onClose, role }: RoomFullscreenProps) 
         <Dot status={room.status} />
       </div>
 
-      {/* Content area */}
+      {/* Content area - full masonry canvas */}
       <div style={{
         flex: 1,
-        overflow: "auto",
-        padding: "32px 24px",
+        overflow: "hidden",
+        padding: 24,
         display: "flex",
-        justifyContent: "center",
+        flexDirection: "column",
       }}>
-        <div style={{ width: "100%", maxWidth: 680 }}>
-          {/* Purpose as invitation when empty */}
-          {isEmpty && room.prompt && (
-            <p style={{
-              fontSize: 15,
-              color: C.t3,
-              lineHeight: 1.7,
-              margin: "0 0 24px",
-              fontStyle: "italic",
-            }}>
-              {room.prompt}
-            </p>
-          )}
+        {/* Purpose as invitation when empty */}
+        {isEmpty && room.prompt && (
+          <p style={{
+            fontSize: 15,
+            color: C.t3,
+            lineHeight: 1.7,
+            margin: "0 0 20px",
+            fontStyle: "italic",
+            flexShrink: 0,
+          }}>
+            {room.prompt}
+          </p>
+        )}
 
-          {/* BlockComposer */}
+        {/* BlockComposer - masonry layout */}
+        <div style={{ flex: 1, minHeight: 0 }}>
           <BlockComposer
             blocks={blocks}
             onChange={(newBlocks) => onUpdate?.(room.id, newBlocks)}
             readOnly={!isEditable}
+            layout="masonry"
+            columns={3}
           />
-
-          {/* Mentor feedback */}
-          {textContent?.feedback && (
-            <div style={{
-              marginTop: 24,
-              padding: 16,
-              background: room.status === "reviewed" ? C.amber + "10" : C.green + "10",
-              borderLeft: `3px solid ${room.status === "reviewed" ? C.amber : C.green}`,
-              borderRadius: 6,
-            }}>
-              <div style={{
-                fontSize: 11,
-                color: room.status === "reviewed" ? C.amber : C.green,
-                marginBottom: 6,
-                fontWeight: 500,
-                textTransform: "uppercase",
-                letterSpacing: ".05em",
-              }}>
-                {room.status === "reviewed" ? "Needs revision" : "Approved"}
-              </div>
-              <div style={{ fontSize: 14, color: C.t2, lineHeight: 1.6, fontStyle: "italic" }}>
-                {textContent.feedback}
-              </div>
-              {textContent.feedbackAt && (
-                <div className="mono" style={{ fontSize: 10, color: C.t4, marginTop: 8 }}>
-                  {textContent.feedbackAt}
-                </div>
-              )}
-            </div>
-          )}
         </div>
+
+        {/* Mentor feedback */}
+        {textContent?.feedback && (
+          <div style={{
+            marginTop: 16,
+            padding: 14,
+            background: room.status === "reviewed" ? C.amber + "10" : C.green + "10",
+            borderLeft: `3px solid ${room.status === "reviewed" ? C.amber : C.green}`,
+            borderRadius: 6,
+            flexShrink: 0,
+          }}>
+            <div style={{
+              fontSize: 10,
+              color: room.status === "reviewed" ? C.amber : C.green,
+              marginBottom: 4,
+              fontWeight: 500,
+              textTransform: "uppercase",
+              letterSpacing: ".05em",
+            }}>
+              {room.status === "reviewed" ? "Needs revision" : "Approved"}
+            </div>
+            <div style={{ fontSize: 13, color: C.t2, lineHeight: 1.5, fontStyle: "italic" }}>
+              {textContent.feedback}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
