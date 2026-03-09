@@ -473,22 +473,24 @@ function BlockImageEdit({ block, onUpdate }: { block: Block; onUpdate: (u: Parti
       {block.storagePath ? (
         <>
           <img src={block.storagePath} alt="" style={{ width: "100%", borderRadius: 6, marginBottom: 8 }} />
-          <input
-            type="text"
+          <textarea
             value={block.caption || ""}
             onChange={(e) => onUpdate({ caption: e.target.value })}
             placeholder="Add caption..."
+            rows={1}
             style={{
               width: "100%",
               padding: "8px 0",
               fontSize: 12,
-              color: C.t2,
-              caretColor: C.t2,
-              WebkitTextFillColor: C.t2,
+              color: C.t1,
+              caretColor: C.t1,
+              WebkitTextFillColor: C.t1,
               background: "transparent",
               border: "none",
               borderBottom: `1px solid ${C.edge}`,
               outline: "none",
+              resize: "none",
+              fontFamily: "inherit",
             }}
           />
           <label style={{ display: "block", marginTop: 8, fontSize: 11, color: C.t4, cursor: "pointer" }}>
@@ -542,23 +544,25 @@ function BlockLinkEdit({ block, onUpdate }: { block: Block; onUpdate: (u: Partia
 
   return (
     <div style={{ padding: 12 }}>
-      <input
-        type="url"
+      <textarea
         value={block.content || ""}
         onChange={(e) => handleUrlChange(e.target.value)}
         placeholder="Paste URL..."
         autoFocus
+        rows={1}
         style={{
           width: "100%",
           padding: 10,
           fontSize: 12,
-          color: C.t2,
-          caretColor: C.t2,
-          WebkitTextFillColor: C.t2,
-          background: C.sep,
-          border: `1px solid ${C.edge}`,
-          borderRadius: 6,
+          color: C.t1,
+          caretColor: C.t1,
+          WebkitTextFillColor: C.t1,
+          background: "transparent",
+          border: "none",
+          borderBottom: `1px solid ${C.edge}`,
           outline: "none",
+          resize: "none",
+          fontFamily: "inherit",
         }}
       />
       {fetching && <div style={{ fontSize: 10, color: C.t4, marginTop: 6 }}>Fetching preview...</div>}
@@ -578,23 +582,25 @@ function BlockEmbedEdit({ block, onUpdate }: { block: Block; onUpdate: (u: Parti
 
   return (
     <div style={{ padding: 12 }}>
-      <input
-        type="url"
+      <textarea
         value={block.content || ""}
         onChange={(e) => onUpdate({ content: e.target.value })}
         placeholder="YouTube, Vimeo, or SoundCloud URL..."
         autoFocus
+        rows={1}
         style={{
           width: "100%",
           padding: 10,
           fontSize: 12,
-          color: C.t2,
-          caretColor: C.t2,
-          WebkitTextFillColor: C.t2,
-          background: C.sep,
-          border: `1px solid ${C.edge}`,
-          borderRadius: 6,
+          color: C.t1,
+          caretColor: C.t1,
+          WebkitTextFillColor: C.t1,
+          background: "transparent",
+          border: "none",
+          borderBottom: `1px solid ${C.edge}`,
           outline: "none",
+          resize: "none",
+          fontFamily: "inherit",
         }}
       />
       {embedUrl && (
