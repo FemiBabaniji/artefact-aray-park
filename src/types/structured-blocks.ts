@@ -10,6 +10,7 @@ export type StructuredBlockType =
   | "image"
   | "link"
   | "embed"
+  | "document"
   | "metric"
   | "milestone"
   | "project"
@@ -74,6 +75,14 @@ export type EmbedBlockContent = {
   provider?: string;
   html?: string;
   aspectRatio?: number;
+};
+
+export type DocumentBlockContent = {
+  documentId: string;
+  filename: string;
+  fileUrl: string;
+  thumbnailUrl?: string;
+  pageCount?: number;
 };
 
 export type MetricBlockContent = {
@@ -164,6 +173,7 @@ export type BlockContent =
   | { type: "image"; data: ImageBlockContent }
   | { type: "link"; data: LinkBlockContent }
   | { type: "embed"; data: EmbedBlockContent }
+  | { type: "document"; data: DocumentBlockContent }
   | { type: "metric"; data: MetricBlockContent }
   | { type: "milestone"; data: MilestoneBlockContent }
   | { type: "project"; data: ProjectBlockContent }
@@ -244,6 +254,10 @@ export function isMetricBlock(block: StructuredBlock): block is StructuredBlock 
   return block.type === "metric";
 }
 
+export function isDocumentBlock(block: StructuredBlock): block is StructuredBlock & { content: DocumentBlockContent } {
+  return block.type === "document";
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 export function getBlockIcon(type: StructuredBlockType): string {
@@ -252,6 +266,7 @@ export function getBlockIcon(type: StructuredBlockType): string {
     image: "\u25A3",
     link: "\u2197",
     embed: "\u25B6",
+    document: "\u25A4",
     metric: "#",
     milestone: "\u2605",
     project: "\u25A6",
@@ -270,6 +285,7 @@ export function getBlockLabel(type: StructuredBlockType): string {
     image: "Image",
     link: "Link",
     embed: "Embed",
+    document: "Document",
     metric: "Metric",
     milestone: "Milestone",
     project: "Project",
@@ -304,6 +320,7 @@ export const createDefaultContent: Record<StructuredBlockType, () => BlockConten
   image: () => ({} as ImageBlockContent),
   link: () => ({ url: "" } as LinkBlockContent),
   embed: () => ({ url: "" } as EmbedBlockContent),
+  document: () => ({ documentId: "", filename: "", fileUrl: "" } as DocumentBlockContent),
   metric: () => ({ value: 0, label: "" } as MetricBlockContent),
   milestone: () => ({ title: "", date: new Date().toISOString().split("T")[0] } as MilestoneBlockContent),
   project: () => ({ title: "", status: "in_progress" } as ProjectBlockContent),
@@ -317,13 +334,13 @@ export const createDefaultContent: Record<StructuredBlockType, () => BlockConten
 // ── Room Semantic to Suggested Block Types ──────────────────────────────────
 
 export const semanticBlockTypes: Record<RoomSemantic, StructuredBlockType[]> = {
-  about: ["text", "image", "link"],
-  projects: ["project", "image", "link", "embed"],
-  skills: ["skill", "certification"],
-  experience: ["experience"],
-  education: ["education", "certification"],
+  about: ["text", "image", "link", "document"],
+  projects: ["project", "image", "link", "embed", "document"],
+  skills: ["skill", "certification", "document"],
+  experience: ["experience", "document"],
+  education: ["education", "certification", "document"],
   timeline: ["milestone", "project", "experience"],
-  metrics: ["metric"],
+  metrics: ["metric", "document"],
   network: ["relationship"],
-  custom: ["text", "image", "link", "embed", "metric", "project", "skill", "experience"],
+  custom: ["text", "image", "link", "embed", "document", "metric", "project", "skill", "experience"],
 };

@@ -12,6 +12,7 @@ export type BlockType =
   | "image"
   | "link"
   | "embed"
+  | "document"
   | "metric"
   | "milestone"
   | "project"
@@ -302,11 +303,12 @@ export function isOngoingRoomV2(room: RoomV2): boolean {
 // Get icon for block type
 export function getBlockTypeIcon(blockType: BlockType): string {
   switch (blockType) {
-    case "text":  return "\u270E"; // pencil
-    case "image": return "\u25A3"; // square
-    case "link":  return "\u2197"; // arrow
-    case "embed": return "\u25B6"; // play
-    default:      return "\u25A1"; // square
+    case "text":     return "\u270E"; // pencil
+    case "image":    return "\u25A3"; // square
+    case "link":     return "\u2197"; // arrow
+    case "embed":    return "\u25B6"; // play
+    case "document": return "\u25A4"; // document
+    default:         return "\u25A1"; // square
   }
 }
 

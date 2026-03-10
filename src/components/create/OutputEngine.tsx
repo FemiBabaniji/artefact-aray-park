@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useC } from "@/hooks/useC";
+import { useIsMobile } from "@/hooks/useBreakpoint";
 import { SP, SPF } from "@/lib/motion";
 import { Lbl } from "@/components/primitives/Lbl";
 import { Btn } from "@/components/primitives/Btn";
@@ -77,6 +78,7 @@ export function CompactOutputView({
   isPublishing,
 }: CompactOutputViewProps) {
   const C = useC();
+  const isMobile = useIsMobile();
   const [activeOutput, setActiveOutput] = useState(1); // Start with portfolio
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<OutputType | null>(null);
@@ -131,10 +133,16 @@ export function CompactOutputView({
 
   const activeColor = OUTPUTS[activeOutput].color;
 
+  // Mobile-specific sizes
+  const cardWidth = isMobile ? 140 : 180;
+  const innerPadding = isMobile ? "8px 10px 10px" : "12px 14px 14px";
+  const avatarSize = isMobile ? 22 : 28;
+
   return (
     <div
       style={{
         display: "flex",
+        flexDirection: isMobile ? "column" : "row",
         alignItems: "center",
         gap: 0,
         position: "relative",
@@ -142,12 +150,12 @@ export function CompactOutputView({
     >
       {/* Mini Artefact Card (Source) */}
       <motion.div
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
+        initial={{ opacity: 0, x: isMobile ? 0 : -20, y: isMobile ? -10 : 0 }}
+        animate={{ opacity: 1, x: 0, y: 0 }}
         transition={SP}
         style={{
-          width: 180,
-          borderRadius: 18,
+          width: cardWidth,
+          borderRadius: isMobile ? 14 : 18,
           overflow: "hidden",
           flexShrink: 0,
           background: accent,
@@ -161,20 +169,21 @@ export function CompactOutputView({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "10px 12px 8px",
+            padding: isMobile ? "8px 10px 6px" : "10px 12px 8px",
           }}
         >
-          <Lbl style={{ fontSize: 7, color: theme.outerText }}>artefact</Lbl>
+          <Lbl style={{ fontSize: isMobile ? 6 : 7, color: theme.outerText }}>artefact</Lbl>
           <motion.button
             onClick={onBack}
             whileHover={{ opacity: 0.7 }}
             style={{
-              fontSize: 8,
+              fontSize: isMobile ? 7 : 8,
               fontFamily: "'DM Mono', monospace",
               color: theme.outerText,
               background: "none",
               border: "none",
               cursor: "pointer",
+              padding: isMobile ? "4px" : 0,
             }}
           >
             ← back
@@ -184,20 +193,20 @@ export function CompactOutputView({
         {/* Inner card */}
         <motion.div
           style={{
-            margin: "0 10px 10px",
-            borderRadius: 12,
-            padding: "12px 14px 14px",
+            margin: isMobile ? "0 8px 8px" : "0 10px 10px",
+            borderRadius: isMobile ? 10 : 12,
+            padding: innerPadding,
             background: cardBg,
-            minHeight: 100,
+            minHeight: isMobile ? 70 : 100,
             position: "relative",
           }}
         >
           {/* Avatar */}
           <motion.div
             style={{
-              width: 28,
-              height: 28,
-              borderRadius: 7,
+              width: avatarSize,
+              height: avatarSize,
+              borderRadius: isMobile ? 5 : 7,
               background: accent,
               display: "flex",
               alignItems: "center",
@@ -206,7 +215,7 @@ export function CompactOutputView({
           >
             <span
               style={{
-                fontSize: 10,
+                fontSize: isMobile ? 8 : 10,
                 fontWeight: 700,
                 color: "rgba(0,0,0,0.5)",
                 fontFamily: "'DM Mono', monospace",
@@ -217,10 +226,10 @@ export function CompactOutputView({
           </motion.div>
 
           {/* Name + title */}
-          <div style={{ position: "absolute", bottom: 14, left: 14, right: 14 }}>
+          <div style={{ position: "absolute", bottom: isMobile ? 10 : 14, left: isMobile ? 10 : 14, right: isMobile ? 10 : 14 }}>
             <div
               style={{
-                fontSize: 14,
+                fontSize: isMobile ? 11 : 14,
                 fontWeight: 700,
                 color: theme.innerTextPrimary,
                 letterSpacing: "-.02em",
@@ -235,7 +244,7 @@ export function CompactOutputView({
             </div>
             <div
               style={{
-                fontSize: 9,
+                fontSize: isMobile ? 7 : 9,
                 color: theme.innerTextSecondary,
               }}
             >
@@ -250,12 +259,12 @@ export function CompactOutputView({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "6px 12px 10px",
+            padding: isMobile ? "4px 10px 8px" : "6px 12px 10px",
           }}
         >
           <span
             style={{
-              fontSize: 8,
+              fontSize: isMobile ? 7 : 8,
               color: theme.outerText,
               fontFamily: "'DM Mono', monospace",
             }}
@@ -264,8 +273,8 @@ export function CompactOutputView({
           </span>
           <div
             style={{
-              width: 5,
-              height: 5,
+              width: isMobile ? 4 : 5,
+              height: isMobile ? 4 : 5,
               borderRadius: "50%",
               background: roomsWithContent > 0 ? "#4ade80" : C.t4,
             }}
@@ -273,88 +282,164 @@ export function CompactOutputView({
         </div>
       </motion.div>
 
-      {/* Animated Branches SVG */}
-      <svg
-        width="120"
-        height="200"
-        viewBox="0 0 120 200"
-        style={{
-          marginLeft: -8,
-          marginRight: -8,
-          zIndex: 1,
-        }}
-      >
-        <defs>
-          <filter id="branch-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        {/* Branch paths */}
-        {[
-          { y: 50, idx: 0, d: "M 0 100 H 40 Q 60 100 60 80 Q 60 50 80 50 H 120" },
-          { y: 100, idx: 1, d: "M 0 100 H 120" },
-          { y: 150, idx: 2, d: "M 0 100 H 40 Q 60 100 60 120 Q 60 150 80 150 H 120" },
-        ].map(({ y, idx, d }) => {
-          const isActive = activeOutput === idx;
-          const color = isActive ? OUTPUTS[idx].color : C.sep;
-          return (
-            <motion.path
-              key={idx}
-              d={d}
-              fill="none"
-              strokeLinecap="round"
-              strokeWidth={2}
-              filter={isActive ? "url(#branch-glow)" : undefined}
-              initial={{ pathLength: 0 }}
-              animate={{
-                pathLength: 1,
-                stroke: color,
-                opacity: isActive ? 1 : 0.25,
-              }}
-              transition={{
-                pathLength: { duration: 0.8, delay: idx * 0.15 },
-                stroke: { duration: 0.3 },
-                opacity: { duration: 0.3 },
-              }}
-            />
-          );
-        })}
-
-        {/* Animated dot traveling along active path */}
-        <motion.circle
-          r={3}
-          fill={activeColor}
-          filter="url(#branch-glow)"
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: [0, 1, 1, 0],
-            cx: [0, 40, 80, 120],
-            cy: activeOutput === 0 ? [100, 100, 65, 50] : activeOutput === 2 ? [100, 100, 135, 150] : [100, 100, 100, 100],
+      {/* Animated Branches SVG - Vertical on mobile, Horizontal on desktop */}
+      {isMobile ? (
+        <svg
+          width="100"
+          height="60"
+          viewBox="0 0 100 60"
+          style={{
+            marginTop: -4,
+            marginBottom: -4,
+            zIndex: 1,
           }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            repeatDelay: 1.5,
-            ease: "easeInOut",
+        >
+          <defs>
+            <filter id="branch-glow-m" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Vertical branch paths for mobile - fan out from center top */}
+          {[
+            { idx: 0, d: "M 50 0 V 20 Q 50 35 25 45 V 60" },
+            { idx: 1, d: "M 50 0 V 60" },
+            { idx: 2, d: "M 50 0 V 20 Q 50 35 75 45 V 60" },
+          ].map(({ idx, d }) => {
+            const isActive = activeOutput === idx;
+            const color = isActive ? OUTPUTS[idx].color : C.sep;
+            return (
+              <motion.path
+                key={idx}
+                d={d}
+                fill="none"
+                strokeLinecap="round"
+                strokeWidth={2}
+                filter={isActive ? "url(#branch-glow-m)" : undefined}
+                initial={{ pathLength: 0 }}
+                animate={{
+                  pathLength: 1,
+                  stroke: color,
+                  opacity: isActive ? 1 : 0.25,
+                }}
+                transition={{
+                  pathLength: { duration: 0.6, delay: idx * 0.1 },
+                  stroke: { duration: 0.3 },
+                  opacity: { duration: 0.3 },
+                }}
+              />
+            );
+          })}
+
+          {/* Animated dot */}
+          <motion.circle
+            r={2.5}
+            fill={activeColor}
+            filter="url(#branch-glow-m)"
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: [0, 1, 1, 0],
+              cy: [0, 20, 40, 60],
+              cx: activeOutput === 0 ? [50, 50, 35, 25] : activeOutput === 2 ? [50, 50, 65, 75] : [50, 50, 50, 50],
+            }}
+            transition={{
+              duration: 1.2,
+              repeat: Infinity,
+              repeatDelay: 1.3,
+              ease: "easeInOut",
+            }}
+          />
+        </svg>
+      ) : (
+        <svg
+          width="120"
+          height="200"
+          viewBox="0 0 120 200"
+          style={{
+            marginLeft: -8,
+            marginRight: -8,
+            zIndex: 1,
           }}
-        />
-      </svg>
+        >
+          <defs>
+            <filter id="branch-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Branch paths */}
+          {[
+            { y: 50, idx: 0, d: "M 0 100 H 40 Q 60 100 60 80 Q 60 50 80 50 H 120" },
+            { y: 100, idx: 1, d: "M 0 100 H 120" },
+            { y: 150, idx: 2, d: "M 0 100 H 40 Q 60 100 60 120 Q 60 150 80 150 H 120" },
+          ].map(({ y, idx, d }) => {
+            const isActive = activeOutput === idx;
+            const color = isActive ? OUTPUTS[idx].color : C.sep;
+            return (
+              <motion.path
+                key={idx}
+                d={d}
+                fill="none"
+                strokeLinecap="round"
+                strokeWidth={2}
+                filter={isActive ? "url(#branch-glow)" : undefined}
+                initial={{ pathLength: 0 }}
+                animate={{
+                  pathLength: 1,
+                  stroke: color,
+                  opacity: isActive ? 1 : 0.25,
+                }}
+                transition={{
+                  pathLength: { duration: 0.8, delay: idx * 0.15 },
+                  stroke: { duration: 0.3 },
+                  opacity: { duration: 0.3 },
+                }}
+              />
+            );
+          })}
+
+          {/* Animated dot traveling along active path */}
+          <motion.circle
+            r={3}
+            fill={activeColor}
+            filter="url(#branch-glow)"
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: [0, 1, 1, 0],
+              cx: [0, 40, 80, 120],
+              cy: activeOutput === 0 ? [100, 100, 65, 50] : activeOutput === 2 ? [100, 100, 135, 150] : [100, 100, 100, 100],
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              repeatDelay: 1.5,
+              ease: "easeInOut",
+            }}
+          />
+        </svg>
+      )}
 
       {/* Output Nodes */}
       <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
+        initial={{ opacity: 0, x: isMobile ? 0 : 20, y: isMobile ? 10 : 0 }}
+        animate={{ opacity: 1, x: 0, y: 0 }}
         transition={{ ...SP, delay: 0.2 }}
         style={{
           display: "flex",
-          flexDirection: "column",
-          gap: 16,
+          flexDirection: isMobile ? "row" : "column",
+          gap: isMobile ? 8 : 16,
           zIndex: 2,
+          flexWrap: isMobile ? "wrap" : "nowrap",
+          justifyContent: isMobile ? "center" : "flex-start",
+          maxWidth: isMobile ? 280 : undefined,
         }}
       >
         {OUTPUTS.map((output, idx) => {
@@ -369,18 +454,21 @@ export function CompactOutputView({
               whileTap={{ scale: 0.98 }}
               animate={{
                 opacity: isActive ? 1 : 0.5,
-                x: isActive ? 0 : -4,
+                x: isMobile ? 0 : isActive ? 0 : -4,
+                y: isMobile ? (isActive ? 0 : 2) : 0,
               }}
               transition={SPF}
               style={{
                 display: "flex",
+                flexDirection: isMobile ? "column" : "row",
                 alignItems: "center",
-                gap: 12,
+                gap: isMobile ? 6 : 12,
                 cursor: generating ? "wait" : "pointer",
-                padding: "10px 14px",
-                borderRadius: 12,
+                padding: isMobile ? "8px 10px" : "10px 14px",
+                borderRadius: isMobile ? 10 : 12,
                 background: isActive ? output.color + "15" : "transparent",
                 border: `1px solid ${isActive ? output.color + "44" : "transparent"}`,
+                minWidth: isMobile ? 75 : undefined,
               }}
             >
               {/* Icon */}
@@ -391,9 +479,9 @@ export function CompactOutputView({
                 }}
                 transition={{ duration: 0.25 }}
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
+                  width: isMobile ? 28 : 32,
+                  height: isMobile ? 28 : 32,
+                  borderRadius: isMobile ? 6 : 8,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -402,7 +490,7 @@ export function CompactOutputView({
               >
                 <span
                   style={{
-                    fontSize: output.icon === "{}" ? 10 : 12,
+                    fontSize: isMobile ? (output.icon === "{}" ? 8 : 10) : (output.icon === "{}" ? 10 : 12),
                     fontWeight: 700,
                     color: isActive ? "rgba(0,0,0,0.6)" : C.t3,
                     fontFamily: "'DM Mono', monospace",
@@ -413,11 +501,11 @@ export function CompactOutputView({
               </motion.div>
 
               {/* Label */}
-              <div style={{ minWidth: 80 }}>
+              <div style={{ minWidth: isMobile ? undefined : 80, textAlign: isMobile ? "center" : "left" }}>
                 <motion.div
                   animate={{ color: isActive ? C.t1 : C.t3 }}
                   style={{
-                    fontSize: 13,
+                    fontSize: isMobile ? 10 : 13,
                     fontWeight: 600,
                     lineHeight: 1.2,
                   }}
@@ -427,81 +515,123 @@ export function CompactOutputView({
                 <motion.div
                   animate={{ color: isActive ? output.color : C.t4 }}
                   style={{
-                    fontSize: 9,
+                    fontSize: isMobile ? 7 : 9,
                     fontFamily: "'DM Mono', monospace",
-                    marginTop: 2,
+                    marginTop: isMobile ? 1 : 2,
                   }}
                 >
                   {output.format}
                 </motion.div>
               </div>
 
-              {/* Generate button (only for active) */}
-              <AnimatePresence>
-                {isActive && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.15 }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleGenerate();
-                    }}
-                    disabled={generating}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    style={{
-                      marginLeft: "auto",
-                      padding: "6px 12px",
-                      borderRadius: 6,
-                      border: "none",
-                      background: generating ? C.sep : output.color,
-                      color: generating ? C.t3 : "rgba(0,0,0,0.7)",
-                      fontSize: 10,
-                      fontWeight: 600,
-                      cursor: generating ? "wait" : "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    }}
-                  >
-                    {generating ? (
-                      <motion.span
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                      >
-                        ◐
-                      </motion.span>
-                    ) : isGenerated ? (
-                      output.id === "identity" ? "Copied!" : "Done!"
-                    ) : output.id === "identity" ? (
-                      "Copy →"
-                    ) : (
-                      "Generate →"
-                    )}
-                  </motion.button>
-                )}
-              </AnimatePresence>
+              {/* Generate button - inline on desktop, below nodes on mobile */}
+              {!isMobile && (
+                <AnimatePresence>
+                  {isActive && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.15 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleGenerate();
+                      }}
+                      disabled={generating}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      style={{
+                        marginLeft: "auto",
+                        padding: "6px 12px",
+                        borderRadius: 6,
+                        border: "none",
+                        background: generating ? C.sep : output.color,
+                        color: generating ? C.t3 : "rgba(0,0,0,0.7)",
+                        fontSize: 10,
+                        fontWeight: 600,
+                        cursor: generating ? "wait" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      {generating ? (
+                        <motion.span
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                        >
+                          ◐
+                        </motion.span>
+                      ) : isGenerated ? (
+                        output.id === "identity" ? "Copied!" : "Done!"
+                      ) : output.id === "identity" ? (
+                        "Copy →"
+                      ) : (
+                        "Generate →"
+                      )}
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              )}
             </motion.div>
           );
         })}
+
+        {/* Mobile: Generate button below all nodes */}
+        {isMobile && (
+          <motion.button
+            onClick={handleGenerate}
+            disabled={generating}
+            whileTap={{ scale: 0.95 }}
+            style={{
+              width: "100%",
+              padding: "10px 16px",
+              borderRadius: 8,
+              border: "none",
+              background: generating ? C.sep : OUTPUTS[activeOutput].color,
+              color: generating ? C.t3 : "rgba(0,0,0,0.7)",
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: generating ? "wait" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              marginTop: 4,
+            }}
+          >
+            {generating ? (
+              <motion.span
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+              >
+                ◐
+              </motion.span>
+            ) : generated === OUTPUTS[activeOutput].id ? (
+              OUTPUTS[activeOutput].id === "identity" ? "Copied!" : "Done!"
+            ) : OUTPUTS[activeOutput].id === "identity" ? (
+              "Copy Context"
+            ) : (
+              `Generate ${OUTPUTS[activeOutput].label}`
+            )}
+          </motion.button>
+        )}
 
         {/* Publish button */}
         {onPublish && (
           <motion.button
             onClick={onPublish}
             disabled={isPublishing}
-            whileHover={{ scale: 1.02 }}
+            whileHover={isMobile ? undefined : { scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             style={{
-              marginTop: 16,
-              padding: "10px 20px",
+              marginTop: isMobile ? 8 : 16,
+              padding: isMobile ? "10px 16px" : "10px 20px",
               borderRadius: 8,
               border: "none",
               background: isPublishing ? C.sep : "#22c55e",
               color: isPublishing ? C.t3 : "#fff",
-              fontSize: 12,
+              fontSize: isMobile ? 11 : 12,
               fontWeight: 600,
               cursor: isPublishing ? "wait" : "pointer",
               display: "flex",

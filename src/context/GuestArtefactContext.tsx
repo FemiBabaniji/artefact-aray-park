@@ -13,7 +13,7 @@ import { createInitialGuestState } from "@/lib/guest/defaults";
 
 // ── Context Type ─────────────────────────────────────────────────────────────
 
-type GuestArtefactContextValue = {
+export type GuestArtefactContextValue = {
   // State
   state: GuestArtefactState;
   isLoaded: boolean;
@@ -93,7 +93,7 @@ const defaultContext: GuestArtefactContextValue = {
 
 // ── Context ──────────────────────────────────────────────────────────────────
 
-const GuestArtefactCtx = createContext<GuestArtefactContextValue>(defaultContext);
+export const GuestArtefactCtx = createContext<GuestArtefactContextValue>(defaultContext);
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 

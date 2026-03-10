@@ -1,7 +1,7 @@
 // Document ingestion types
-// Supports: text, PDF, slides (presentations)
+// Supports: text, PDF, slides (presentations), URL (web pages)
 
-export type DocumentType = "text" | "pdf" | "slides";
+export type DocumentType = "text" | "pdf" | "slides" | "url";
 
 export type DocumentStatus =
   | "uploading"
@@ -31,6 +31,13 @@ export type ExtractedContent = {
   pageCount?: number;        // For PDFs/slides
   pages?: PageContent[];     // Per-page content
   metadata?: DocumentMetadata;
+  // URL extraction specific
+  summary?: string;          // AI-generated summary
+  blocks?: Array<{           // Structured blocks from agentic extraction
+    type: string;
+    content: string;
+    metadata?: Record<string, unknown>;
+  }>;
 };
 
 export type PageContent = {
@@ -112,6 +119,7 @@ export function getDocumentTypeIcon(type: DocumentType): string {
     case "pdf":    return "\u2B1A"; // PDF icon
     case "slides": return "\u229E"; // Grid icon
     case "text":   return "T";
+    case "url":    return "\u21D7"; // Link icon
     default:       return "\u25A1";
   }
 }
@@ -121,6 +129,7 @@ export function getDocumentTypeLabel(type: DocumentType): string {
     case "pdf":    return "PDF";
     case "slides": return "Slides";
     case "text":   return "Text";
+    case "url":    return "URL";
     default:       return type;
   }
 }

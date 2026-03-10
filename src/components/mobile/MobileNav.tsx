@@ -17,9 +17,17 @@ const NAV_ITEMS: NavItem[] = [
   { path: "/community", label: "Cohort", icon: "⊞" },
 ];
 
+// Routes where global nav is hidden (standalone pages with their own UI)
+const HIDDEN_ROUTES = ["/create", "/p/", "/auth/"];
+
 export function MobileNav() {
   const C = useC();
   const pathname = usePathname();
+
+  // Hide on standalone pages
+  if (HIDDEN_ROUTES.some((route) => pathname.startsWith(route))) {
+    return null;
+  }
 
   return (
     <nav style={{

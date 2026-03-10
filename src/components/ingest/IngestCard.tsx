@@ -31,6 +31,8 @@ export function IngestCard({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [isExtractingUrl, setIsExtractingUrl] = useState(false);
 
   const W = expanded ? "min(56vw, 54vh)" : "158px";
   const H = expanded ? "min(72vh, 70vw)" : "136px";
@@ -83,11 +85,12 @@ export function IngestCard({
   );
 
   const processFile = async (file: File) => {
+    const blockId = `doc_${crypto.randomUUID().slice(0, 8)}`;
     const newBlock: DocumentBlock = {
-      id: `doc_${crypto.randomUUID().slice(0, 8)}`,
+      id: blockId,
       type: "document",
       document: {
-        id: `doc_${crypto.randomUUID().slice(0, 8)}`,
+        id: blockId,
         type: file.type === "application/pdf" ? "pdf" :
               file.type.includes("presentation") ? "slides" : "text",
         filename: file.name,
@@ -101,13 +104,15 @@ export function IngestCard({
       createdAt: new Date().toISOString(),
     };
 
-    onBlocksChange([...blocks, newBlock]);
+    const updatedBlocks = [...blocks, newBlock];
+    onBlocksChange(updatedBlocks);
 
-    // Extract text from PDF
-    if (file.type === "application/pdf") {
+    // Extract content with agentic AI
+    if (file.type === "application/pdf" || file.type === "text/plain" || file.type === "text/markdown") {
       try {
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("agentic", "true"); // Enable AI extraction
 
         const res = await fetch("/api/ingest/extract", {
           method: "POST",
@@ -116,32 +121,35 @@ export function IngestCard({
 
         if (res.ok) {
           const data = await res.json();
+          // Build rawText from structured blocks if available
+          const structuredText = data.blocks
+            ?.map((b: { type: string; content: string }) => `[${b.type}] ${b.content}`)
+            .join("\n\n");
+
           onBlocksChange(
-            blocks.map((b) =>
-              b.id === newBlock.id
+            updatedBlocks.map((b) =>
+              b.id === blockId
                 ? {
                     ...b,
-                    document: { ...b.document!, status: "ready" as const },
+                    document: {
+                      ...b.document!,
+                      status: "ready" as const,
+                      filename: data.title || b.document!.filename,
+                    },
                     extractedContent: {
-                      documentId: newBlock.id,
-                      rawText: data.text,
+                      documentId: blockId,
+                      rawText: structuredText || data.text,
                       pageCount: data.pageCount,
+                      summary: data.summary,
+                      blocks: data.blocks,
                     },
                   }
                 : b
-            ).concat(newBlock.id === blocks[blocks.length]?.id ? [] : [{
-              ...newBlock,
-              document: { ...newBlock.document!, status: "ready" as const },
-              extractedContent: {
-                documentId: newBlock.id,
-                rawText: data.text,
-                pageCount: data.pageCount,
-              },
-            }])
+            )
           );
         }
       } catch (err) {
-        console.error("Failed to extract PDF:", err);
+        console.error("Failed to extract file:", err);
       }
     }
   };
@@ -156,6 +164,58 @@ export function IngestCard({
     const combined = [textContent, docContent].filter(Boolean).join("\n\n");
     if (combined) {
       onPull(combined);
+    }
+  };
+
+  const handleUrlExtract = async () => {
+    if (!urlInput.trim()) return;
+
+    setIsExtractingUrl(true);
+    try {
+      const res = await fetch("/api/ingest/url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: urlInput.trim() }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Create a document block for the URL extraction
+        const newBlock: DocumentBlock = {
+          id: `url_${crypto.randomUUID().slice(0, 8)}`,
+          type: "document",
+          document: {
+            id: `url_${crypto.randomUUID().slice(0, 8)}`,
+            type: "url",
+            filename: data.title || urlInput,
+            size: 0,
+            mimeType: "text/html",
+            status: "ready",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+          orderIndex: blocks.length,
+          createdAt: new Date().toISOString(),
+          extractedContent: {
+            documentId: `url_${crypto.randomUUID().slice(0, 8)}`,
+            rawText: data.blocks
+              ?.map((b: { type: string; content: string }) => `[${b.type}] ${b.content}`)
+              .join("\n\n") || data.summary,
+            pageCount: 1,
+            summary: data.summary,
+            blocks: data.blocks,
+          },
+        };
+        onBlocksChange([...blocks, newBlock]);
+        setUrlInput("");
+      } else {
+        const err = await res.json();
+        console.error("URL extraction failed:", err.error);
+      }
+    } catch (err) {
+      console.error("Failed to extract URL:", err);
+    } finally {
+      setIsExtractingUrl(false);
     }
   };
 
@@ -476,6 +536,53 @@ export function IngestCard({
                   }}
                 >
                   <Lbl style={{ display: "block", marginBottom: 14 }}>sources</Lbl>
+
+                  {/* URL input with agentic extraction */}
+                  <div style={{ marginBottom: 12 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 6,
+                        marginBottom: 6,
+                      }}
+                    >
+                      <input
+                        type="url"
+                        value={urlInput}
+                        onChange={(e) => setUrlInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleUrlExtract()}
+                        placeholder="Paste URL..."
+                        disabled={isExtractingUrl}
+                        style={{
+                          flex: 1,
+                          padding: "8px 10px",
+                          fontSize: 11,
+                          background: C.void,
+                          border: `1px solid ${C.edge}`,
+                          borderRadius: 6,
+                          color: C.t1,
+                          outline: "none",
+                        }}
+                      />
+                    </div>
+                    <Btn
+                      onClick={handleUrlExtract}
+                      disabled={!urlInput.trim() || isExtractingUrl}
+                      accent={urlInput.trim() && !isExtractingUrl ? C.blue : undefined}
+                      style={{ width: "100%", justifyContent: "center" }}
+                    >
+                      {isExtractingUrl ? (
+                        <motion.span
+                          animate={{ opacity: [0.4, 1, 0.4] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                        >
+                          extracting...
+                        </motion.span>
+                      ) : (
+                        "extract with AI"
+                      )}
+                    </Btn>
+                  </div>
 
                   {/* Upload button */}
                   <input

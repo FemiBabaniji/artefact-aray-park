@@ -494,6 +494,7 @@ const BLOCK_TYPE_CONFIG: Record<BlockType, { icon: string; label: string; color:
   image: { icon: "\u25A3", label: "Image", color: "#60a5fa" },
   link: { icon: "\u2197", label: "Link", color: "#34d399" },
   embed: { icon: "\u25B6", label: "Embed", color: "#fb7185" },
+  document: { icon: "\u25A4", label: "Document", color: "#f43f5e" },
   metric: { icon: "#", label: "Metric", color: "#fbbf24" },
   milestone: { icon: "\u2605", label: "Milestone", color: "#a78bfa" },
   project: { icon: "\u25A6", label: "Project", color: "#22c55e" },

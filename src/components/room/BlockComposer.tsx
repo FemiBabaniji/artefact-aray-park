@@ -6,7 +6,9 @@ import { useC } from "@/hooks/useC";
 import { Btn } from "@/components/primitives/Btn";
 import { Lbl } from "@/components/primitives/Lbl";
 import { TypedBlockEditor, BLOCK_TYPE_CONFIG } from "./TypedBlockEditor";
+import { DocumentBlock } from "@/components/blocks/DocumentBlock";
 import type { Block, BlockType } from "@/types/room";
+import type { DocumentBlockContent } from "@/types/structured-blocks";
 
 // Typed block types that use the TypedBlockEditor
 const TYPED_BLOCK_TYPES: BlockType[] = [
@@ -257,7 +259,11 @@ function MasonryBlock({ block, isActive, onActivate, onUpdate, onDelete, readOnl
 
       {/* Content */}
       <AnimatePresence mode="wait">
-        {TYPED_BLOCK_TYPES.includes(block.blockType) ? (
+        {block.blockType === "document" ? (
+          <div style={{ padding: 4 }}>
+            <DocumentBlock content={block.metadata as DocumentBlockContent} />
+          </div>
+        ) : TYPED_BLOCK_TYPES.includes(block.blockType) ? (
           <TypedBlockEditor
             blockType={block.blockType}
             content={block.metadata || {}}
