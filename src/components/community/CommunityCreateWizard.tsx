@@ -135,19 +135,11 @@ const DEFAULT_COMMUNITY_ROOMS: RoomTemplate[] = [
   }
 ];
 
-const THEMES = ["auto", "light", "warm", "dark"] as const;
-const THEME_DOTS: Record<string, string> = {
-  auto: "linear-gradient(135deg,#fff 50%,#111 50%)",
-  light: "#f5f5f0",
-  warm: "#1a1714",
-  dark: "#0b0b0f",
-};
-
 const MAX_ROOMS = 8;
 const MAX_BLOCKS_PER_ROOM = 12;
 
 const DEFAULT_CONFIG: CommunityConfig = {
-  theme: "dark",
+  theme: "light",
   textSize: "M",
   density: "list",
   rooms: DEFAULT_COMMUNITY_ROOMS,
@@ -652,7 +644,7 @@ function MockGuestArtefactProvider({
   const state: GuestArtefactState = useMemo(
     () => ({
       sessionId: "preview",
-      createdAt: new Date().toISOString(),
+      createdAt: "2024-01-01T00:00:00.000Z",
       identity,
       rooms,
     }),
@@ -668,8 +660,8 @@ function MockGuestArtefactProvider({
       lifecycleState: "draft" as const,
       identity,
       rooms,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: "2024-01-01T00:00:00.000Z",
+      updatedAt: "2024-01-01T00:00:00.000Z",
       version: 0,
     }),
     [identity, rooms]
@@ -846,6 +838,7 @@ function ArtefactPreview({
 
 export function CommunityCreateWizard() {
   const C = useC();
+  const { dark, toggle: toggleTheme } = useTheme();
 
   const [wizStep, setWizStep] = useState(0);
   const [done, setDone] = useState<Set<string>>(new Set());
@@ -1352,51 +1345,17 @@ export function CommunityCreateWizard() {
 
                           {s.id === "appearance" && (
                             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                              <div>
-                                <Lbl style={{ display: "block", marginBottom: 10 }}>Theme</Lbl>
-                                <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                                  {THEMES.map((t) => (
-                                    <div
-                                      key={t}
-                                      style={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        alignItems: "center",
-                                        gap: 5,
-                                        cursor: "pointer",
-                                      }}
-                                      onClick={() => upd("theme", t)}
-                                    >
-                                      <motion.div
-                                        animate={{
-                                          border:
-                                            config.theme === t
-                                              ? `2px solid ${C.t1}`
-                                              : "2px solid transparent",
-                                        }}
-                                        style={{
-                                          width: 30,
-                                          height: 30,
-                                          borderRadius: 15,
-                                          background: THEME_DOTS[t],
-                                          boxSizing: "border-box",
-                                          cursor: "pointer",
-                                          transition: "border .15s",
-                                        }}
-                                      />
-                                      <span
-                                        style={{
-                                          fontSize: 9,
-                                          color: config.theme === t ? C.t1 : C.t4,
-                                          fontFamily: "'DM Mono', monospace",
-                                          letterSpacing: ".04em",
-                                        }}
-                                      >
-                                        {t}
-                                      </span>
-                                    </div>
-                                  ))}
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <div>
+                                  <Lbl style={{ display: "block" }}>Dark mode</Lbl>
+                                  <div style={{ fontSize: 10, color: C.t4, marginTop: 2 }}>
+                                    {dark ? "Dark theme" : "Light theme"}
+                                  </div>
                                 </div>
+                                <Toggle
+                                  on={dark}
+                                  onChange={() => toggleTheme()}
+                                />
                               </div>
                               <div>
                                 <Lbl style={{ display: "block", marginBottom: 8 }}>Text size</Lbl>
