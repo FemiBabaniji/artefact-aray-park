@@ -5,12 +5,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useC, useTheme } from "@/hooks/useC";
 import { FADE, SP, SPF } from "@/lib/motion";
 import { useGuestArtefactContext } from "@/context/GuestArtefactContext";
+import { usePublish } from "@/hooks/usePublish";
 import { BlockComposer } from "@/components/room/BlockComposer";
 import { CompactOutputView } from "@/components/create/OutputEngine";
+import { IngestCard } from "@/components/ingest/IngestCard";
+import { PullToArtefactModal } from "@/components/ingest/PullToArtefactModal";
 import { Lbl } from "@/components/primitives/Lbl";
 import { Btn } from "@/components/primitives/Btn";
 import { Dot } from "@/components/primitives/Dot";
 import type { Block } from "@/types/room";
+import type { DocumentBlock } from "@/types/document";
 
 // ── Color Palettes (matches preview.jsx) ──────────────────────────────────────
 
@@ -55,9 +59,34 @@ function useCardColors(C: ReturnType<typeof useC>) {
 export function CreatePortal() {
   const C = useC();
   const { toggle: toggleTheme, dark } = useTheme();
-  const { state, isLoaded } = useGuestArtefactContext();
+  const { state, isLoaded, addRoom, addBlock } = useGuestArtefactContext();
+  const { publish, isPublishing, slug, publicUrl, error: publishError, reset: resetPublish } = usePublish();
   const [compact, setCompact] = useState(true);
   const [compactMode, setCompactMode] = useState<"card" | "outputs">("card");
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Ingest workspace state (side panel)
+  // showIngest removed - ingest panel is always visible
+  const [ingestBlocks, setIngestBlocks] = useState<DocumentBlock[]>([]);
+  const [ingestExpanded, setIngestExpanded] = useState(false);
+  const [showPullModal, setShowPullModal] = useState(false);
+  const [pullContent, setPullContent] = useState("");
+
+  const handlePublish = async () => {
+    const result = await publish(state.identity, state.rooms);
+    if (result.success) {
+      setShowPublishModal(true);
+    } else if (result.authRequired) {
+      setShowAuthModal(true);
+    }
+  };
+
+  // Handle pull from ingest workspace
+  const handleIngestPull = (content: string) => {
+    setPullContent(content);
+    setShowPullModal(true);
+  };
 
   const theme = useCardColors(C);
   const [colorId, setColorId] = useState(theme.defaultColorId);
@@ -184,12 +213,29 @@ export function CreatePortal() {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+              </AnimatePresence>
 
       {/* Main content */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+        {/* Artefact view - miniaturizes when ingest expanded (only in expanded mode) */}
         <AnimatePresence mode="wait">
-          {compact ? (
+          {!compact && ingestExpanded ? (
+            <motion.div
+              key="mini-card"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={SP}
+            >
+              <MiniCard
+                identity={state.identity}
+                accent={cc.accent}
+                cardBg={cc.card}
+                onClick={() => setIngestExpanded(false)}
+                theme={theme}
+              />
+            </motion.div>
+          ) : compact ? (
             compactMode === "card" ? (
               <motion.div
                 key="compact-card"
@@ -227,6 +273,8 @@ export function CreatePortal() {
                   cardBg={cc.card}
                   theme={theme}
                   onBack={() => setCompactMode("card")}
+                  onPublish={handlePublish}
+                  isPublishing={isPublishing}
                 />
               </motion.div>
             )
@@ -251,7 +299,249 @@ export function CreatePortal() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Ingest side panel - only in expanded mode */}
+        {!compact && (
+          <IngestCard
+            expanded={ingestExpanded}
+            onToggle={() => setIngestExpanded(!ingestExpanded)}
+            blocks={ingestBlocks}
+            onBlocksChange={setIngestBlocks}
+            onPull={handleIngestPull}
+          />
+        )}
       </div>
+
+      {/* Publish Success Modal */}
+      <AnimatePresence>
+        {showPublishModal && slug && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 100,
+            }}
+            onClick={() => {
+              setShowPublishModal(false);
+              resetPublish();
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: C.bg,
+                borderRadius: 16,
+                padding: 24,
+                maxWidth: 400,
+                width: "90%",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: "50%",
+                  background: "#22c55e22",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 16px",
+                }}
+              >
+                <span style={{ fontSize: 24, color: "#22c55e" }}>✓</span>
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 600, color: C.t1, marginBottom: 8 }}>
+                Published!
+              </h3>
+              <p style={{ fontSize: 13, color: C.t3, marginBottom: 16, lineHeight: 1.5 }}>
+                Your artefact is now live and accessible at:
+              </p>
+              <a
+                href={publicUrl || `/p/${slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "block",
+                  padding: "12px 16px",
+                  background: C.void,
+                  borderRadius: 8,
+                  fontSize: 13,
+                  color: cc.accent,
+                  textDecoration: "none",
+                  marginBottom: 16,
+                  wordBreak: "break-all",
+                }}
+              >
+                {window.location.origin}/p/{slug}
+              </a>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Btn
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/p/${slug}`);
+                  }}
+                  style={{ flex: 1, justifyContent: "center" }}
+                >
+                  Copy Link
+                </Btn>
+                <Btn
+                  onClick={() => {
+                    setShowPublishModal(false);
+                    resetPublish();
+                  }}
+                  style={{ flex: 1, justifyContent: "center" }}
+                  accent={cc.accent}
+                >
+                  Done
+                </Btn>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Auth Required Modal */}
+      <AnimatePresence>
+        {showAuthModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 100,
+            }}
+            onClick={() => {
+              setShowAuthModal(false);
+              resetPublish();
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: C.bg,
+                borderRadius: 16,
+                padding: 24,
+                maxWidth: 400,
+                width: "90%",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: "50%",
+                  background: cc.accent + "22",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 16px",
+                }}
+              >
+                <span style={{ fontSize: 24, color: cc.accent }}>→</span>
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 600, color: C.t1, marginBottom: 8 }}>
+                Sign in to publish
+              </h3>
+              <p style={{ fontSize: 13, color: C.t3, marginBottom: 16, lineHeight: 1.5 }}>
+                {publishError || "You need to sign in to publish your artefact and make it publicly accessible."}
+              </p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Btn
+                  onClick={() => {
+                    setShowAuthModal(false);
+                    resetPublish();
+                  }}
+                  style={{ flex: 1, justifyContent: "center" }}
+                >
+                  Cancel
+                </Btn>
+                <a
+                  href="/auth/login"
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "8px 16px",
+                    borderRadius: 6,
+                    background: cc.accent,
+                    color: "#000",
+                    fontSize: 12,
+                    fontWeight: 500,
+                    textDecoration: "none",
+                  }}
+                >
+                  Sign In
+                </a>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Pull to Artefact Modal */}
+      <AnimatePresence>
+        {showPullModal && pullContent && (
+          <PullToArtefactModal
+            content={pullContent}
+            sourceLabel="Ingested content"
+            rooms={state.rooms}
+            onConfirm={(target, parsedContent) => {
+              // Handle pull confirmation
+              if (target.type === "new_room") {
+                const newRoomId = addRoom(target.roomLabel || "Imported content");
+                parsedContent.blocks.forEach((block, idx) => {
+                  addBlock(newRoomId, {
+                    id: `blk_${crypto.randomUUID().slice(0, 8)}`,
+                    blockType: "text",
+                    content: block.content,
+                    orderIndex: idx,
+                  });
+                });
+              } else if (target.type === "room" && target.roomId) {
+                const room = state.rooms.find((r) => r.id === target.roomId);
+                const startIndex = room?.blocks.length || 0;
+                parsedContent.blocks.forEach((block, idx) => {
+                  addBlock(target.roomId!, {
+                    id: `blk_${crypto.randomUUID().slice(0, 8)}`,
+                    blockType: "text",
+                    content: block.content,
+                    orderIndex: startIndex + idx,
+                  });
+                });
+              }
+              setShowPullModal(false);
+              setPullContent("");
+              setIngestExpanded(false);
+              setCompactMode("card");
+            }}
+            onDismiss={() => {
+              setShowPullModal(false);
+              setPullContent("");
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -447,27 +737,29 @@ function CompactCard({
           >
             {roomsWithContent} of {rooms.length} rooms
           </span>
-          <motion.button
-            onClick={onShowOutputs}
-            whileHover={{ opacity: 0.8, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "4px 8px",
-              borderRadius: 6,
-              background: "rgba(0,0,0,0.15)",
-              border: "none",
-              cursor: "pointer",
-              fontSize: 9,
-              color: outerTextColor,
-              fontFamily: "'DM Mono', monospace",
-            }}
-          >
-            <span>outputs</span>
-            <span style={{ opacity: 0.6 }}>→</span>
-          </motion.button>
+          <div style={{ display: "flex", gap: 6 }}>
+            <motion.button
+              onClick={onShowOutputs}
+              whileHover={{ opacity: 0.8, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "4px 8px",
+                borderRadius: 6,
+                background: "rgba(0,0,0,0.15)",
+                border: "none",
+                cursor: "pointer",
+                fontSize: 9,
+                color: outerTextColor,
+                fontFamily: "'DM Mono', monospace",
+              }}
+            >
+              <span>outputs</span>
+              <span style={{ opacity: 0.6 }}>&rarr;</span>
+            </motion.button>
+          </div>
         </div>
       </motion.div>
 
@@ -530,6 +822,104 @@ function CompactCard({
         </motion.button>
       </div>
     </div>
+  );
+}
+
+// ── Mini Card (shown when ingest is expanded) ─────────────────────────────────
+
+type MiniCardProps = {
+  identity: { name: string; title: string };
+  accent: string;
+  cardBg: string;
+  onClick: () => void;
+  theme: CardTheme;
+};
+
+function MiniCard({ identity, accent, cardBg, onClick, theme }: MiniCardProps) {
+  const initials = identity.name
+    ? identity.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "?";
+
+  return (
+    <motion.div
+      onClick={onClick}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      animate={{ background: accent }}
+      transition={{ duration: 0.28, ease: [0.22, 0.1, 0.36, 1] }}
+      style={{
+        width: 80,
+        height: 100,
+        borderRadius: 14,
+        overflow: "hidden",
+        cursor: "pointer",
+        position: "relative",
+        flexShrink: 0,
+        boxShadow: theme.cardShadow(accent),
+      }}
+    >
+      {/* Inner mini card */}
+      <motion.div
+        animate={{ background: cardBg }}
+        transition={{ duration: 0.28 }}
+        style={{
+          position: "absolute",
+          inset: 6,
+          borderRadius: 10,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 8,
+        }}
+      >
+        {/* Avatar */}
+        <motion.div
+          animate={{ background: accent }}
+          transition={{ duration: 0.28 }}
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 7,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 6,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "rgba(0,0,0,0.5)",
+              fontFamily: "'DM Mono', monospace",
+            }}
+          >
+            {initials}
+          </span>
+        </motion.div>
+        {/* Name truncated */}
+        <div
+          style={{
+            fontSize: 9,
+            fontWeight: 600,
+            color: theme.innerTextPrimary,
+            textAlign: "center",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            width: "100%",
+          }}
+        >
+          {identity.name?.split(" ")[0] || "Name"}
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

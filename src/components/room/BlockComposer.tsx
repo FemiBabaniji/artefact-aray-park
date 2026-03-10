@@ -5,7 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useC } from "@/hooks/useC";
 import { Btn } from "@/components/primitives/Btn";
 import { Lbl } from "@/components/primitives/Lbl";
+import { TypedBlockEditor, BLOCK_TYPE_CONFIG } from "./TypedBlockEditor";
 import type { Block, BlockType } from "@/types/room";
+
+// Typed block types that use the TypedBlockEditor
+const TYPED_BLOCK_TYPES: BlockType[] = [
+  "project", "skill", "experience", "education", "certification", "metric", "milestone", "relationship"
+];
 
 const SP = { type: "spring", stiffness: 300, damping: 30 } as const;
 const FADE = { duration: 0.15 } as const;
@@ -104,21 +110,11 @@ export function BlockComposer({
     <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%" }}>
       {/* Toolbar */}
       {!readOnly && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <div style={{ display: "flex", gap: 6 }}>
-            <AddBlockButton icon="T" label="Text" onClick={() => addBlock("text")} />
-            <AddBlockButton icon="◫" label="Image" onClick={() => addBlock("image")} />
-            <AddBlockButton icon="↗" label="Link" onClick={() => addBlock("link")} />
-            <AddBlockButton icon="▶" label="Embed" onClick={() => addBlock("embed")} />
-          </div>
-          <Btn
-            onClick={() => setPreview(p => !p)}
-            accent={preview ? C.blue : undefined}
-            style={{ fontSize: 9 }}
-          >
-            {preview ? "← edit" : "preview →"}
-          </Btn>
-        </div>
+        <BlockToolbar
+          onAddBlock={addBlock}
+          preview={preview}
+          onTogglePreview={() => setPreview((p) => !p)}
+        />
       )}
 
       {/* Purpose prompt */}
@@ -261,7 +257,15 @@ function MasonryBlock({ block, isActive, onActivate, onUpdate, onDelete, readOnl
 
       {/* Content */}
       <AnimatePresence mode="wait">
-        {isActive && !readOnly ? (
+        {TYPED_BLOCK_TYPES.includes(block.blockType) ? (
+          <TypedBlockEditor
+            blockType={block.blockType}
+            content={block.metadata || {}}
+            onChange={(content) => onUpdate({ metadata: content })}
+            onDelete={onDelete}
+            readOnly={readOnly}
+          />
+        ) : isActive && !readOnly ? (
           <motion.div
             key="edit"
             initial={{ opacity: 0 }}
@@ -652,23 +656,27 @@ function AddBlockButton({
   icon,
   label,
   onClick,
+  color,
 }: {
   icon: string;
   label: string;
   onClick: () => void;
+  color?: string;
 }) {
   const C = useC();
 
   return (
-    <button
+    <motion.button
       onClick={onClick}
+      whileHover={{ scale: 1.02, background: color ? color + "22" : C.edge }}
+      whileTap={{ scale: 0.98 }}
       style={{
         display: "flex",
         alignItems: "center",
         gap: 4,
         padding: "6px 10px",
         fontSize: 11,
-        color: C.t3,
+        color: color || C.t3,
         background: C.edge + "50",
         border: "none",
         borderRadius: 4,
@@ -677,6 +685,117 @@ function AddBlockButton({
     >
       <span>{icon}</span>
       <span>{label}</span>
-    </button>
+    </motion.button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Block Toolbar with expandable typed blocks
+// ─────────────────────────────────────────────────────────────────────────────
+
+function BlockToolbar({
+  onAddBlock,
+  preview,
+  onTogglePreview,
+}: {
+  onAddBlock: (type: BlockType) => void;
+  preview: boolean;
+  onTogglePreview: () => void;
+}) {
+  const C = useC();
+  const [showMore, setShowMore] = useState(false);
+
+  const basicBlocks: { type: BlockType; icon: string; label: string }[] = [
+    { type: "text", icon: "T", label: "Text" },
+    { type: "image", icon: "\u25A3", label: "Image" },
+    { type: "link", icon: "\u2197", label: "Link" },
+    { type: "embed", icon: "\u25B6", label: "Embed" },
+  ];
+
+  const typedBlocks: { type: BlockType; icon: string; label: string; color: string }[] = [
+    { type: "project", icon: "\u25A6", label: "Project", color: "#22c55e" },
+    { type: "skill", icon: "\u2713", label: "Skill", color: "#14b8a6" },
+    { type: "experience", icon: "\u2261", label: "Experience", color: "#f97316" },
+    { type: "education", icon: "\u2302", label: "Education", color: "#8b5cf6" },
+    { type: "certification", icon: "\u2714", label: "Certification", color: "#06b6d4" },
+    { type: "metric", icon: "#", label: "Metric", color: "#fbbf24" },
+    { type: "milestone", icon: "\u2605", label: "Milestone", color: "#a78bfa" },
+    { type: "relationship", icon: "\u2194", label: "Connection", color: "#ec4899" },
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
+      {/* Main row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {basicBlocks.map((b) => (
+            <AddBlockButton key={b.type} icon={b.icon} label={b.label} onClick={() => onAddBlock(b.type)} />
+          ))}
+          <motion.button
+            onClick={() => setShowMore((p) => !p)}
+            whileHover={{ background: C.edge }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "6px 10px",
+              fontSize: 11,
+              color: showMore ? C.blue : C.t3,
+              background: showMore ? C.blue + "15" : C.edge + "50",
+              border: "none",
+              borderRadius: 4,
+              cursor: "pointer",
+            }}
+          >
+            <span>{showMore ? "\u2212" : "+"}</span>
+            <span>{showMore ? "Less" : "More"}</span>
+          </motion.button>
+        </div>
+        <Btn
+          onClick={onTogglePreview}
+          accent={preview ? C.blue : undefined}
+          style={{ fontSize: 9 }}
+        >
+          {preview ? "\u2190 edit" : "preview \u2192"}
+        </Btn>
+      </div>
+
+      {/* Typed blocks row */}
+      <AnimatePresence>
+        {showMore && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.15 }}
+            style={{ overflow: "hidden" }}
+          >
+            <div
+              style={{
+                display: "flex",
+                gap: 6,
+                flexWrap: "wrap",
+                paddingTop: 4,
+                paddingBottom: 4,
+                borderTop: `1px solid ${C.sep}`,
+              }}
+            >
+              {typedBlocks.map((b) => (
+                <AddBlockButton
+                  key={b.type}
+                  icon={b.icon}
+                  label={b.label}
+                  color={b.color}
+                  onClick={() => {
+                    onAddBlock(b.type);
+                    setShowMore(false);
+                  }}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

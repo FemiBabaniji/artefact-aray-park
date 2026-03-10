@@ -547,6 +547,57 @@ export interface Database {
           created_at?: string;
         };
       };
+      // ── P1: Graph Edges ─────────────────────────────────────────────────────
+      graph_edges: {
+        Row: {
+          id: string;
+          artefact_id: string;
+          edge_type: EdgeTypeDB;
+          source_type: string;
+          source_id: string;
+          target_type: string;
+          target_id: string | null;
+          target_ref: string | null;
+          weight: number;
+          context: string | null;
+          start_date: string | null;
+          end_date: string | null;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          artefact_id: string;
+          edge_type: EdgeTypeDB;
+          source_type: string;
+          source_id: string;
+          target_type: string;
+          target_id?: string | null;
+          target_ref?: string | null;
+          weight?: number;
+          context?: string | null;
+          start_date?: string | null;
+          end_date?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          artefact_id?: string;
+          edge_type?: EdgeTypeDB;
+          source_type?: string;
+          source_id?: string;
+          target_type?: string;
+          target_id?: string | null;
+          target_ref?: string | null;
+          weight?: number;
+          context?: string | null;
+          start_date?: string | null;
+          end_date?: string | null;
+          metadata?: Json;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       at_risk_members: {
@@ -580,6 +631,31 @@ export interface Database {
           rooms: Json;
         };
       };
+      // P1: Aggregation Views
+      artefact_skills: {
+        Row: {
+          artefact_id: string;
+          slug: string | null;
+          name: string;
+          category: string | null;
+          level: string | null;
+          usage_count: number;
+        };
+      };
+      artefact_timeline: {
+        Row: {
+          artefact_id: string;
+          slug: string | null;
+          item_type: string;
+          item_id: string;
+          title: string | null;
+          description: string | null;
+          start_date: string | null;
+          end_date: string | null;
+          source: string;
+          metadata: Json;
+        };
+      };
     };
     Functions: {
       current_community_role: {
@@ -597,8 +673,10 @@ export interface Database {
       community_tier_enum: CommunityTier;
       member_role_enum: MemberRole;
       room_visibility: RoomVisibilityDB;
+      room_semantic: RoomSemanticDB;
       block_type: BlockTypeDB;
       milestone_source: MilestoneSourceDB;
+      edge_type: EdgeTypeDB;
     };
   };
 }

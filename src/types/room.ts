@@ -7,7 +7,19 @@ export type Pace = "foundation" | "development" | "ongoing";
 
 export type RoomStatusV2 = "empty" | "active" | "submitted" | "feedback" | "complete";
 
-export type BlockType = "text" | "image" | "link" | "embed";
+export type BlockType =
+  | "text"
+  | "image"
+  | "link"
+  | "embed"
+  | "metric"
+  | "milestone"
+  | "project"
+  | "skill"
+  | "experience"
+  | "education"
+  | "certification"
+  | "relationship";
 
 // Field types for structured rooms
 export type FieldType = "text" | "longtext" | "number" | "date" | "file" | "url" | "select" | "boolean";

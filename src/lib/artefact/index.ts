@@ -1,8 +1,8 @@
 // ════════════════════════════════════════════════════════════════════════════
-// Artefact System (P0) - Barrel Export
+// Artefact System - Barrel Export
 // ════════════════════════════════════════════════════════════════════════════
 
-// Reducer
+// P0: Reducer
 export {
   reduceEvents,
   createEmptyState,
@@ -11,7 +11,7 @@ export {
   getEventsByType,
 } from "./reducer";
 
-// Event Store
+// P0: Event Store
 export {
   EVENT_STORE_KEY,
   loadEventStore,
@@ -23,3 +23,20 @@ export {
   initializeGuestArtefact,
   EventBuilders,
 } from "./event-store";
+
+// P3: Output Compilation
+export {
+  compile,
+  compileResume,
+  compilePortfolio,
+  compileContext,
+  compileMCPResource,
+  type OutputFormat,
+  type ResumeOutput,
+  type PortfolioOutput,
+  type ContextOutput,
+  type MCPResource,
+} from "./output";
+
+// P3: Resume HTML Template
+export { generateResumeHTML } from "./resume-html";

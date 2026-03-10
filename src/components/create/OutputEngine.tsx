@@ -62,6 +62,8 @@ type CompactOutputViewProps = {
     cardShadow: (accent: string) => string;
   };
   onBack: () => void;
+  onPublish?: () => void;
+  isPublishing?: boolean;
 };
 
 export function CompactOutputView({
@@ -71,6 +73,8 @@ export function CompactOutputView({
   cardBg,
   theme,
   onBack,
+  onPublish,
+  isPublishing,
 }: CompactOutputViewProps) {
   const C = useC();
   const [activeOutput, setActiveOutput] = useState(1); // Start with portfolio
@@ -482,6 +486,49 @@ export function CompactOutputView({
             </motion.div>
           );
         })}
+
+        {/* Publish button */}
+        {onPublish && (
+          <motion.button
+            onClick={onPublish}
+            disabled={isPublishing}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            style={{
+              marginTop: 16,
+              padding: "10px 20px",
+              borderRadius: 8,
+              border: "none",
+              background: isPublishing ? C.sep : "#22c55e",
+              color: isPublishing ? C.t3 : "#fff",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: isPublishing ? "wait" : "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              width: "100%",
+            }}
+          >
+            {isPublishing ? (
+              <>
+                <motion.span
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                >
+                  ◐
+                </motion.span>
+                Publishing...
+              </>
+            ) : (
+              <>
+                <span>↑</span>
+                Publish Artefact
+              </>
+            )}
+          </motion.button>
+        )}
       </motion.div>
     </div>
   );

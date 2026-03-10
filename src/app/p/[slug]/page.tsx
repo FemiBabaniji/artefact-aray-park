@@ -44,15 +44,40 @@ export default function PublicArtefactPage() {
         return;
       }
 
-      // TODO: For real slugs, fetch from Supabase
-      // const { data, error } = await supabase
-      //   .from("artefacts")
-      //   .select("*, rooms(*, blocks(*))")
-      //   .eq("slug", slug)
-      //   .single();
-
-      // For now, show not found for non-preview slugs
-      setError("Artefact not found. The claim flow is not yet implemented.");
+      // Fetch from API for published artefacts
+      try {
+        const res = await fetch(`/api/artefact/${slug}?format=context`);
+        if (!res.ok) {
+          setError("Artefact not found.");
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
+        // Transform API response to StandaloneArtefact format
+        setArtefact({
+          id: slug,
+          slug: slug,
+          identity: data.identity,
+          rooms: (data.rooms || []).map((r: { key: string; label: string; blocks: { type: string; content: Record<string, unknown> }[] }, i: number) => ({
+            id: r.key,
+            key: r.key,
+            label: r.label,
+            visibility: "public" as const,
+            orderIndex: i,
+            blocks: (r.blocks || []).map((b: { type: string; content: Record<string, unknown> }, j: number) => ({
+              id: `${r.key}-${j}`,
+              blockType: b.type,
+              content: b.content.body || "",
+              metadata: b.content,
+              orderIndex: j,
+            })),
+          })),
+          createdAt: data.generatedAt || new Date().toISOString(),
+          updatedAt: data.generatedAt || new Date().toISOString(),
+        });
+      } catch {
+        setError("Failed to load artefact.");
+      }
       setLoading(false);
     }
 
