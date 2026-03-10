@@ -6,6 +6,7 @@ import { useC, useTheme } from "@/hooks/useC";
 import { FADE, SP, SPF } from "@/lib/motion";
 import { useGuestArtefactContext } from "@/context/GuestArtefactContext";
 import { BlockComposer } from "@/components/room/BlockComposer";
+import { CompactOutputView } from "@/components/create/OutputEngine";
 import { Lbl } from "@/components/primitives/Lbl";
 import { Btn } from "@/components/primitives/Btn";
 import { Dot } from "@/components/primitives/Dot";
@@ -56,6 +57,7 @@ export function CreatePortal() {
   const { toggle: toggleTheme, dark } = useTheme();
   const { state, isLoaded } = useGuestArtefactContext();
   const [compact, setCompact] = useState(true);
+  const [compactMode, setCompactMode] = useState<"card" | "outputs">("card");
 
   const theme = useCardColors(C);
   const [colorId, setColorId] = useState(theme.defaultColorId);
@@ -105,9 +107,10 @@ export function CreatePortal() {
       }}
     >
       {/* Welcome message when compact */}
-      <AnimatePresence>
-        {compact && (
+      <AnimatePresence mode="wait">
+        {compact && compactMode === "card" && (
           <motion.div
+            key="welcome-card"
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
@@ -143,32 +146,90 @@ export function CreatePortal() {
             </div>
           </motion.div>
         )}
+        {compact && compactMode === "outputs" && (
+          <motion.div
+            key="welcome-outputs"
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={FADE}
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: "50%",
+              left: 0,
+              right: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              pointerEvents: "none",
+              paddingBottom: 20,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 28,
+                fontWeight: 600,
+                color: C.t1,
+                letterSpacing: "-.03em",
+                lineHeight: 1.25,
+                marginBottom: 8,
+              }}
+            >
+              Context compiler
+            </div>
+            <div style={{ fontSize: 14, color: C.t3, lineHeight: 1.6 }}>
+              Generate outputs from your artefact.
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Main content */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
         <AnimatePresence mode="wait">
           {compact ? (
-            <motion.div
-              key="compact"
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.97 }}
-              transition={SP}
-            >
-              <CompactCard
-                identity={state.identity}
-                rooms={state.rooms}
-                accent={cc.accent}
-                cardBg={cc.card}
-                onExpand={() => setCompact(false)}
-                colorId={colorId}
-                onColorChange={setColorId}
-                theme={theme}
-                dark={dark}
-                onToggleTheme={toggleTheme}
-              />
-            </motion.div>
+            compactMode === "card" ? (
+              <motion.div
+                key="compact-card"
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                transition={SP}
+              >
+                <CompactCard
+                  identity={state.identity}
+                  rooms={state.rooms}
+                  accent={cc.accent}
+                  cardBg={cc.card}
+                  onExpand={() => setCompact(false)}
+                  onShowOutputs={() => setCompactMode("outputs")}
+                  colorId={colorId}
+                  onColorChange={setColorId}
+                  theme={theme}
+                  dark={dark}
+                  onToggleTheme={toggleTheme}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="compact-outputs"
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                transition={SP}
+              >
+                <CompactOutputView
+                  identity={state.identity}
+                  rooms={state.rooms}
+                  accent={cc.accent}
+                  cardBg={cc.card}
+                  theme={theme}
+                  onBack={() => setCompactMode("card")}
+                />
+              </motion.div>
+            )
           ) : (
             <motion.div
               key="expanded"
@@ -212,6 +273,7 @@ type CompactCardProps = {
   accent: string;
   cardBg: string;
   onExpand: () => void;
+  onShowOutputs: () => void;
   colorId: string;
   onColorChange: (id: string) => void;
   theme: CardTheme;
@@ -225,6 +287,7 @@ function CompactCard({
   accent,
   cardBg,
   onExpand,
+  onShowOutputs,
   colorId,
   onColorChange,
   theme,
@@ -384,14 +447,27 @@ function CompactCard({
           >
             {roomsWithContent} of {rooms.length} rooms
           </span>
-          <div
+          <motion.button
+            onClick={onShowOutputs}
+            whileHover={{ opacity: 0.8, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: roomsWithContent > 0 ? "#4ade80" : C.t4,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "4px 8px",
+              borderRadius: 6,
+              background: "rgba(0,0,0,0.15)",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 9,
+              color: outerTextColor,
+              fontFamily: "'DM Mono', monospace",
             }}
-          />
+          >
+            <span>outputs</span>
+            <span style={{ opacity: 0.6 }}>→</span>
+          </motion.button>
         </div>
       </motion.div>
 
@@ -1030,6 +1106,7 @@ function ExpandedArtefact({
                   />
                 </motion.div>
               )}
+
             </AnimatePresence>
           </div>
         </motion.div>

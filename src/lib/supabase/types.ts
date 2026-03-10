@@ -20,6 +20,21 @@ export type CommunityTier = "standard" | "pro" | "custom" | "demo";
 
 export type MemberRole = "member" | "mentor" | "admin";
 
+// Standalone Artefact Types (P0)
+export type RoomVisibilityDB = "public" | "private" | "unlisted";
+export type BlockTypeDB =
+  | "text" | "image" | "link" | "metric" | "milestone" | "embed"
+  | "project" | "skill" | "experience" | "education" | "certification" | "relationship";
+export type MilestoneSourceDB = "manual" | "github" | "signal";
+
+// P1: Structured Context Types
+export type RoomSemanticDB =
+  | "about" | "projects" | "skills" | "experience" | "education"
+  | "timeline" | "metrics" | "network" | "custom";
+export type EdgeTypeDB =
+  | "worked_on" | "learned" | "collaborated_with" | "employed_by"
+  | "studied_at" | "mentored_by" | "uses_tool" | "related_to";
+
 export type Json =
   | string
   | number
@@ -412,6 +427,126 @@ export interface Database {
           created_at?: string;
         };
       };
+      // ── Standalone Artefact Tables ────────────────────────────────────────
+      standalone_artefacts: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          slug: string | null;
+          identity: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          slug?: string | null;
+          identity?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          slug?: string | null;
+          identity?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      standalone_rooms: {
+        Row: {
+          id: string;
+          artefact_id: string;
+          key: string;
+          label: string;
+          prompt: string | null;
+          semantic: RoomSemanticDB;
+          visibility: RoomVisibilityDB;
+          order_index: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          artefact_id: string;
+          key: string;
+          label: string;
+          prompt?: string | null;
+          semantic?: RoomSemanticDB;
+          visibility?: RoomVisibilityDB;
+          order_index?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          artefact_id?: string;
+          key?: string;
+          label?: string;
+          prompt?: string | null;
+          semantic?: RoomSemanticDB;
+          visibility?: RoomVisibilityDB;
+          order_index?: number;
+          created_at?: string;
+        };
+      };
+      standalone_blocks: {
+        Row: {
+          id: string;
+          room_id: string;
+          type: BlockTypeDB;
+          content: Json;
+          order_index: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          room_id: string;
+          type?: BlockTypeDB;
+          content?: Json;
+          order_index?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          room_id?: string;
+          type?: BlockTypeDB;
+          content?: Json;
+          order_index?: number;
+          created_at?: string;
+        };
+      };
+      milestones: {
+        Row: {
+          id: string;
+          artefact_id: string;
+          title: string;
+          description: string | null;
+          date: string;
+          source: MilestoneSourceDB;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          artefact_id: string;
+          title: string;
+          description?: string | null;
+          date: string;
+          source?: MilestoneSourceDB;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          artefact_id?: string;
+          title?: string;
+          description?: string | null;
+          date?: string;
+          source?: MilestoneSourceDB;
+          metadata?: Json;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       at_risk_members: {
@@ -434,6 +569,17 @@ export interface Database {
           pct: number;
         };
       };
+      artefact_full: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          slug: string | null;
+          identity: Json;
+          created_at: string;
+          updated_at: string;
+          rooms: Json;
+        };
+      };
     };
     Functions: {
       current_community_role: {
@@ -450,6 +596,9 @@ export interface Database {
       section_status_enum: SectionStatus;
       community_tier_enum: CommunityTier;
       member_role_enum: MemberRole;
+      room_visibility: RoomVisibilityDB;
+      block_type: BlockTypeDB;
+      milestone_source: MilestoneSourceDB;
     };
   };
 }

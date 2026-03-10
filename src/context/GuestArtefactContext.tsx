@@ -1,13 +1,14 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-import { useGuestArtefact } from "@/hooks/useGuestArtefact";
+import { useEventSourcedArtefact } from "@/hooks/useEventSourcedArtefact";
 import type {
   GuestArtefactState,
   Identity,
   StandaloneRoom,
   StandaloneBlock,
 } from "@/types/artefact";
+import type { ArtefactState, ArtefactEvent, LifecycleState } from "@/types/events";
 import { createInitialGuestState } from "@/lib/guest/defaults";
 
 // ── Context Type ─────────────────────────────────────────────────────────────
@@ -18,6 +19,12 @@ type GuestArtefactContextValue = {
   isLoaded: boolean;
   activeRoomId: string | null;
   setActiveRoomId: (id: string | null) => void;
+
+  // Event-sourced state (P0)
+  artefactState: ArtefactState;
+  events: ArtefactEvent[];
+  version: number;
+  lifecycleState: LifecycleState;
 
   // Identity
   updateIdentity: (updates: Partial<Identity>) => void;
@@ -33,6 +40,11 @@ type GuestArtefactContextValue = {
   addBlock: (roomId: string, block: StandaloneBlock) => void;
   removeBlock: (roomId: string, blockId: string) => void;
 
+  // Lifecycle (P0)
+  claim: (ownerId: string, email?: string) => void;
+  publish: (slug: string) => void;
+  archive: (reason?: string) => void;
+
   // Helpers
   getActiveRoom: () => StandaloneRoom | undefined;
   getRoomBlockCount: () => number;
@@ -41,11 +53,28 @@ type GuestArtefactContextValue = {
 
 // ── Default Context ──────────────────────────────────────────────────────────
 
+const defaultArtefactState: ArtefactState = {
+  id: "",
+  sessionId: "",
+  ownerId: null,
+  slug: null,
+  lifecycleState: "draft",
+  identity: { name: "", title: "", bio: "", location: "", skills: [], links: [] },
+  rooms: [],
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  version: 0,
+};
+
 const defaultContext: GuestArtefactContextValue = {
   state: createInitialGuestState(),
   isLoaded: false,
   activeRoomId: null,
   setActiveRoomId: () => {},
+  artefactState: defaultArtefactState,
+  events: [],
+  version: 0,
+  lifecycleState: "draft",
   updateIdentity: () => {},
   updateRoom: () => {},
   addRoom: () => "",
@@ -54,6 +83,9 @@ const defaultContext: GuestArtefactContextValue = {
   updateBlocks: () => {},
   addBlock: () => {},
   removeBlock: () => {},
+  claim: () => {},
+  publish: () => {},
+  archive: () => {},
   getActiveRoom: () => undefined,
   getRoomBlockCount: () => 0,
   clearState: () => {},
@@ -76,7 +108,7 @@ type GuestArtefactProviderProps = {
 };
 
 export function GuestArtefactProvider({ children }: GuestArtefactProviderProps) {
-  const guest = useGuestArtefact();
+  const guest = useEventSourcedArtefact();
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
 
   // Set initial active room once loaded
@@ -100,6 +132,10 @@ export function GuestArtefactProvider({ children }: GuestArtefactProviderProps) 
     isLoaded: guest.isLoaded,
     activeRoomId: effectiveActiveRoomId,
     setActiveRoomId: handleSetActiveRoom,
+    artefactState: guest.artefactState,
+    events: guest.events,
+    version: guest.version,
+    lifecycleState: guest.artefactState.lifecycleState,
     updateIdentity: guest.updateIdentity,
     updateRoom: guest.updateRoom,
     addRoom: guest.addRoom,
@@ -108,6 +144,9 @@ export function GuestArtefactProvider({ children }: GuestArtefactProviderProps) 
     updateBlocks: guest.updateBlocks,
     addBlock: guest.addBlock,
     removeBlock: guest.removeBlock,
+    claim: guest.claim,
+    publish: guest.publish,
+    archive: guest.archive,
     getActiveRoom,
     getRoomBlockCount,
     clearState: guest.clearState,
