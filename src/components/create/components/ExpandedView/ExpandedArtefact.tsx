@@ -13,6 +13,7 @@ import { DrillTile, DrillOverlay, RoomFullscreen } from "../DrillView";
 import { IdentityEditor } from "./IdentityEditor";
 import { RoomView } from "./RoomView";
 import { IngestContent } from "@/components/ingest/IngestContent";
+import { PublicArtefactView } from "@/components/create/PublicArtefactView";
 import type { Block } from "@/types/room";
 import type { CardTheme } from "../../types";
 import type { DocumentBlock } from "@/types/document";
@@ -33,6 +34,8 @@ type ExpandedArtefactProps = {
   autoShowRoom?: boolean;
   /** Fill parent container instead of using fixed sizing */
   fillContainer?: boolean;
+  /** Hide all editing controls (color picker, theme toggle, add room, identity edit) */
+  readOnly?: boolean;
 };
 
 export function ExpandedArtefact({
@@ -48,6 +51,7 @@ export function ExpandedArtefact({
   onIngestPull,
   autoShowRoom = false,
   fillContainer = false,
+  readOnly = false,
 }: ExpandedArtefactProps) {
   const C = useC();
   const isMobile = useIsMobile();
@@ -64,6 +68,7 @@ export function ExpandedArtefact({
 
   const [view, setView] = useState<"overview" | "identity" | "room" | "ingest">("overview");
   const [layout, setLayout] = useState<"list" | "drill">("list");
+  const [mode, setMode] = useState<"workspace" | "page">("workspace");
   const [isAddingRoom, setIsAddingRoom] = useState(false);
   const [newRoomLabel, setNewRoomLabel] = useState("");
   const [drillActiveL, setDrillActiveL] = useState(0);
@@ -149,11 +154,44 @@ export function ExpandedArtefact({
           {state.identity.name || "Untitled"}
         </span>
 
-        {/* View toggle - hide on mobile for simplicity */}
+        {/* Mode toggle: Workspace | Page */}
         {!isMobile && (
           <div style={{
             display: "flex",
             marginLeft: 12,
+            border: `1px solid ${C.sep}`,
+            borderRadius: 6,
+            overflow: "hidden"
+          }}>
+            {[
+              { key: "workspace" as const, label: "Workspace" },
+              { key: "page" as const, label: "Page" },
+            ].map(({ key, label }) => (
+              <motion.button
+                key={key}
+                onClick={() => setMode(key)}
+                whileTap={{ scale: 0.95 }}
+                style={{
+                  padding: "4px 10px",
+                  background: mode === key ? C.edge : "transparent",
+                  color: mode === key ? C.t1 : C.t4,
+                  fontSize: 9,
+                  fontWeight: 500,
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "background 0.15s, color 0.15s",
+                }}
+              >
+                {label}
+              </motion.button>
+            ))}
+          </div>
+        )}
+
+        {/* Layout toggle (only in workspace mode) */}
+        {!isMobile && mode === "workspace" && (
+          <div style={{
+            display: "flex",
             border: `1px solid ${C.sep}`,
             borderRadius: 6,
             overflow: "hidden"
@@ -217,7 +255,34 @@ export function ExpandedArtefact({
 
         {/* Content area */}
         <AnimatePresence mode="wait">
-        {layout === "list" ? (
+        {mode === "page" ? (
+        /* ══════════════════════════════════════════════════════════════════════════════
+           PAGE MODE - Full page preview
+           ══════════════════════════════════════════════════════════════════════════════ */
+        <motion.div
+          key="page-mode"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={FADE}
+          style={{
+            flex: 1,
+            overflow: "auto",
+            background: C.void,
+          }}
+        >
+          <PublicArtefactView
+            artefact={{
+              id: state.sessionId,
+              identity: state.identity,
+              rooms: state.rooms,
+              createdAt: state.createdAt,
+              updatedAt: new Date().toISOString(),
+            }}
+            accent={accent}
+          />
+        </motion.div>
+        ) : layout === "list" ? (
         <motion.div
           key="list-layout"
           initial={{ opacity: 0 }}
@@ -244,12 +309,12 @@ export function ExpandedArtefact({
           >
             {/* Identity section */}
             <motion.div
-              onClick={() => setView("identity")}
-              whileHover={{ opacity: 0.85 }}
+              onClick={readOnly ? undefined : () => setView("identity")}
+              whileHover={readOnly ? undefined : { opacity: 0.85 }}
               style={{
                 padding: isMobile ? "12px" : "16px",
                 borderBottom: `1px solid ${C.sep}`,
-                cursor: "pointer",
+                cursor: readOnly ? "default" : "pointer",
                 background: view === "identity" ? C.sep : "transparent",
               }}
             >
@@ -400,45 +465,47 @@ export function ExpandedArtefact({
                 );
               })}
 
-              {/* Add room */}
-              <div style={{ padding: isMobile ? "6px 12px" : "8px 16px" }}>
-                {isAddingRoom ? (
-                  <div style={{ display: "flex", gap: 4 }}>
-                    <input
-                      type="text"
-                      value={newRoomLabel}
-                      onChange={(e) => setNewRoomLabel(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Room name"
-                      autoFocus
-                      style={{
-                        flex: 1,
-                        background: "transparent",
-                        border: `1px solid ${C.sep}`,
-                        borderRadius: 4,
-                        padding: isMobile ? "4px 8px" : "6px 10px",
-                        fontSize: fontSize.body,
-                        color: C.t1,
-                        outline: "none",
-                        minWidth: 0,
-                      }}
-                    />
-                    <Btn onClick={handleAddRoom} style={{ color: C.green, fontSize: fontSize.body }}>
-                      +
+              {/* Add room - only when editable */}
+              {!readOnly && (
+                <div style={{ padding: isMobile ? "6px 12px" : "8px 16px" }}>
+                  {isAddingRoom ? (
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <input
+                        type="text"
+                        value={newRoomLabel}
+                        onChange={(e) => setNewRoomLabel(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Room name"
+                        autoFocus
+                        style={{
+                          flex: 1,
+                          background: "transparent",
+                          border: `1px solid ${C.sep}`,
+                          borderRadius: 4,
+                          padding: isMobile ? "4px 8px" : "6px 10px",
+                          fontSize: fontSize.body,
+                          color: C.t1,
+                          outline: "none",
+                          minWidth: 0,
+                        }}
+                      />
+                      <Btn onClick={handleAddRoom} style={{ color: C.green, fontSize: fontSize.body }}>
+                        +
+                      </Btn>
+                    </div>
+                  ) : (
+                    <Btn
+                      onClick={() => setIsAddingRoom(true)}
+                      style={{ color: C.t3, fontSize: fontSize.small }}
+                    >
+                      + add
                     </Btn>
-                  </div>
-                ) : (
-                  <Btn
-                    onClick={() => setIsAddingRoom(true)}
-                    style={{ color: C.t3, fontSize: fontSize.small }}
-                  >
-                    + add
-                  </Btn>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
-              {/* Ingest section - mobile only */}
-              {isMobile && onIngestPull && (
+              {/* Ingest section - mobile only, hide when readOnly */}
+              {!readOnly && isMobile && onIngestPull && (
                 <motion.div
                   onClick={() => setView("ingest")}
                   whileHover={{ background: C.bg }}
@@ -465,70 +532,72 @@ export function ExpandedArtefact({
               )}
             </div>
 
-            {/* Color swatches + theme toggle */}
-            <div
-              style={{
-                padding: isMobile ? "10px 12px" : "12px 16px",
-                borderTop: `1px solid ${C.sep}`,
-                display: "flex",
-                alignItems: "center",
-                gap: isMobile ? 4 : 6,
-              }}
-            >
-              {theme.colors.map((col) => (
-                <motion.button
-                  key={col.id}
-                  onClick={() => onColorChange(col.id)}
-                  animate={{
-                    background: col.accent,
-                    width: colorId === col.id ? (isMobile ? 14 : 16) : (isMobile ? 8 : 10),
-                    height: colorId === col.id ? (isMobile ? 14 : 16) : (isMobile ? 8 : 10),
-                    boxShadow:
-                      colorId === col.id
-                        ? `0 0 0 1.5px ${C.void}, 0 0 0 2.5px ${col.accent}`
-                        : "none",
-                  }}
-                  transition={{ duration: 0.15 }}
-                  style={{
-                    borderRadius: "50%",
-                    border: "none",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                  }}
-                />
-              ))}
-
-              {/* Theme toggle */}
-              <motion.button
-                onClick={onToggleTheme}
-                whileHover={{ opacity: 0.7 }}
-                whileTap={{ scale: 0.9 }}
+            {/* Color swatches + theme toggle - only when editable */}
+            {!readOnly && (
+              <div
                 style={{
-                  marginLeft: "auto",
-                  width: isMobile ? 20 : 24,
-                  height: isMobile ? 12 : 14,
-                  borderRadius: 7,
-                  background: C.sep,
-                  border: `1px solid ${C.edge}`,
-                  cursor: "pointer",
-                  position: "relative",
-                  flexShrink: 0,
+                  padding: isMobile ? "10px 12px" : "12px 16px",
+                  borderTop: `1px solid ${C.sep}`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: isMobile ? 4 : 6,
                 }}
               >
-                <motion.div
-                  animate={{ x: dark ? 2 : (isMobile ? 8 : 10) }}
-                  transition={{ duration: 0.15 }}
+                {theme.colors.map((col) => (
+                  <motion.button
+                    key={col.id}
+                    onClick={() => onColorChange(col.id)}
+                    animate={{
+                      background: col.accent,
+                      width: colorId === col.id ? (isMobile ? 14 : 16) : (isMobile ? 8 : 10),
+                      height: colorId === col.id ? (isMobile ? 14 : 16) : (isMobile ? 8 : 10),
+                      boxShadow:
+                        colorId === col.id
+                          ? `0 0 0 1.5px ${C.void}, 0 0 0 2.5px ${col.accent}`
+                          : "none",
+                    }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      borderRadius: "50%",
+                      border: "none",
+                      cursor: "pointer",
+                      flexShrink: 0,
+                    }}
+                  />
+                ))}
+
+                {/* Theme toggle */}
+                <motion.button
+                  onClick={onToggleTheme}
+                  whileHover={{ opacity: 0.7 }}
+                  whileTap={{ scale: 0.9 }}
                   style={{
-                    position: "absolute",
-                    top: isMobile ? 1.5 : 2,
-                    width: isMobile ? 7 : 8,
-                    height: isMobile ? 7 : 8,
-                    borderRadius: "50%",
-                    background: dark ? C.t3 : "#fbbf24",
+                    marginLeft: "auto",
+                    width: isMobile ? 20 : 24,
+                    height: isMobile ? 12 : 14,
+                    borderRadius: 7,
+                    background: C.sep,
+                    border: `1px solid ${C.edge}`,
+                    cursor: "pointer",
+                    position: "relative",
+                    flexShrink: 0,
                   }}
-                />
-              </motion.button>
-            </div>
+                >
+                  <motion.div
+                    animate={{ x: dark ? 2 : (isMobile ? 8 : 10) }}
+                    transition={{ duration: 0.15 }}
+                    style={{
+                      position: "absolute",
+                      top: isMobile ? 1.5 : 2,
+                      width: isMobile ? 7 : 8,
+                      height: isMobile ? 7 : 8,
+                      borderRadius: "50%",
+                      background: dark ? C.t3 : "#fbbf24",
+                    }}
+                  />
+                </motion.button>
+              </div>
+            )}
           </div>
 
           {/* Main content area */}
@@ -645,6 +714,7 @@ export function ExpandedArtefact({
                     canDelete={state.rooms.length > 1}
                     onBack={() => setView("overview")}
                     compact={isMobile}
+                    readOnly={readOnly}
                   />
                 </motion.div>
               )}

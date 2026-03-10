@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useMemo, useEffect, useCallback, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useC, useTheme } from "@/hooks/useC";
 import { FADE } from "@/lib/motion";
@@ -10,6 +11,8 @@ import { useCardColors } from "@/components/create/hooks";
 import { GuestArtefactCtx, type GuestArtefactContextValue } from "@/context/GuestArtefactContext";
 import type { GuestArtefactState, StandaloneRoom, Identity } from "@/types/artefact";
 import type { ArtefactState, LifecycleState } from "@/types/events";
+import { PageComposer, ViewToggle, MemberDirectoryPreview, getTemplateForRoom, getPresetOptions } from "./sections";
+import type { PreviewViewMode } from "./sections";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -40,6 +43,7 @@ type RoomTemplate = {
   shared: boolean;
   visibility: "public" | "community" | "private";
   blocks: BlockTemplate[];
+  preset?: string;
 };
 
 type DirectoryConfig = {
@@ -494,6 +498,38 @@ function RoomAccordion({
                 </div>
               </div>
 
+              {/* Layout Preset */}
+              <div>
+                <Lbl style={{ display: "block", marginBottom: 6 }}>Layout preset</Lbl>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {(() => {
+                    const template = getTemplateForRoom(room.id, room.type);
+                    const presets = getPresetOptions(template.id);
+                    const currentPreset = room.preset || template.defaultPreset;
+                    return presets.map((p) => (
+                      <motion.button
+                        key={p.id}
+                        onClick={() => onUpdate({ preset: p.id })}
+                        animate={{
+                          background: currentPreset === p.id ? C.edge : "transparent",
+                          borderColor: currentPreset === p.id ? C.t3 : C.sep,
+                        }}
+                        style={{
+                          padding: "5px 10px",
+                          border: "1px solid",
+                          borderRadius: 6,
+                          fontSize: 11,
+                          color: currentPreset === p.id ? C.t1 : C.t3,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {p.label}
+                      </motion.button>
+                    ));
+                  })()}
+                </div>
+              </div>
+
               {/* Shared + Visibility Row */}
               <div style={{ display: "flex", gap: 20 }}>
                 <div style={{ flex: 1 }}>
@@ -839,15 +875,18 @@ function ArtefactPreview({
 export function CommunityCreateWizard() {
   const C = useC();
   const { dark, toggle: toggleTheme } = useTheme();
+  const router = useRouter();
 
   const [wizStep, setWizStep] = useState(0);
   const [done, setDone] = useState<Set<string>>(new Set());
   const [launched, setLaunched] = useState(false);
   const [started, setStarted] = useState(false);
   const [logo, setLogo] = useState<string | null>(null);
+  const [communityName, setCommunityName] = useState("");
   const logoRef = useRef<HTMLInputElement>(null);
   const [config, setConfig] = useState<CommunityConfig>(DEFAULT_CONFIG);
   const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
+  const [previewViewMode, setPreviewViewMode] = useState<PreviewViewMode>("workspace");
 
   const upd = (path: string, val: unknown) => {
     setConfig((prev) => {
@@ -967,13 +1006,34 @@ export function CommunityCreateWizard() {
           padding: 40,
         }}
       >
-        <div style={{ fontSize: 36, color: C.green }}>✓</div>
-        <div style={{ fontSize: 20, fontWeight: 600, color: C.t1, letterSpacing: "-.025em" }}>
-          Community workspace ready.
+        {/* Community logo */}
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 14,
+            background: logo ? "transparent" : C.edge,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+            border: `1px solid ${C.sep}`,
+            marginBottom: 4,
+          }}
+        >
+          {logo ? (
+            <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <span style={{ fontSize: 20, color: C.green, fontWeight: 600 }}>✓</span>
+          )}
         </div>
-        <div style={{ fontSize: 13, color: C.t3, maxWidth: 360, lineHeight: 1.7 }}>
-          Members will receive artefacts structured exactly as you configured. Start inviting
-          founders to join your community.
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 600, color: C.t1, letterSpacing: "-.025em" }}>
+            {communityName || "Your community"} is ready
+          </div>
+          <div style={{ fontSize: 13, color: C.t3, maxWidth: 360, lineHeight: 1.7, marginTop: 8 }}>
+            Members will receive artefacts structured exactly as you configured.
+          </div>
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
           <motion.button
@@ -996,6 +1056,7 @@ export function CommunityCreateWizard() {
           <motion.button
             whileHover={{ opacity: 0.8 }}
             whileTap={{ scale: 0.97 }}
+            onClick={() => router.push("/community/test/dashboard")}
             style={{
               padding: "9px 20px",
               border: `1px solid ${C.sep}`,
@@ -1032,181 +1093,222 @@ export function CommunityCreateWizard() {
           position: "absolute",
           inset: 0,
           display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "center",
+          flexDirection: "column",
+          alignItems: "center",
           overflow: "auto",
-          padding: "80px 24px 120px",
           willChange: "transform, opacity",
+          background: `linear-gradient(180deg, ${C.bg} 0%, ${dark ? "rgba(30,30,35,1)" : "rgba(250,250,252,1)"} 100%)`,
         }}
       >
-        <div style={{ width: "100%", maxWidth: 480 }}>
-          <div style={{ marginBottom: 32 }}>
-            <div style={{ fontSize: 22, fontWeight: 600, color: C.t1, letterSpacing: "-.025em" }}>
-              Create your community
-            </div>
+        {/* Minimal branded header */}
+        <div
+          style={{
+            width: "100%",
+            padding: "20px 32px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              background: logo ? "transparent" : `linear-gradient(135deg, ${C.blue}40 0%, ${C.blue}20 100%)`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+              border: `1px solid ${C.sep}`,
+            }}
+          >
+            {logo ? (
+              <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <span style={{ fontSize: 10, color: C.blue, fontWeight: 600 }}>C</span>
+            )}
           </div>
+          <span style={{ fontSize: 11, color: C.t3, fontFamily: "'DM Sans', sans-serif" }}>
+            {communityName || "New Community"}
+          </span>
+        </div>
 
-          {WIZARD_STEPS.map((s, idx) => {
-            const isCurrent = idx === 0;
-            return (
-              <div key={s.id}>
-                <div style={{ height: 1, background: C.sep }} />
-                <div
+        {/* Main welcome content */}
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 24px 80px" }}>
+          <div style={{ width: "100%", maxWidth: 420 }}>
+            {/* Hero section */}
+            <div style={{ textAlign: "center", marginBottom: 40 }}>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                <input
+                  ref={logoRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={handleLogoUpload}
+                />
+                <motion.div
+                  onClick={() => logoRef.current?.click()}
+                  whileHover={{ scale: 1.02, borderColor: C.t3 }}
+                  whileTap={{ scale: 0.98 }}
                   style={{
+                    width: 72,
+                    height: 72,
+                    borderRadius: 16,
+                    background: logo ? "transparent" : `linear-gradient(135deg, ${C.blue}15 0%, ${C.blue}05 100%)`,
+                    border: `2px dashed ${logo ? C.t3 : C.sep}`,
                     display: "flex",
-                    gap: 16,
-                    padding: "18px 0",
-                    opacity: isCurrent ? 1 : 0.32,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 20px",
+                    cursor: "pointer",
+                    overflow: "hidden",
+                    transition: "border-color 0.2s",
                   }}
                 >
-                  <div
+                  {logo ? (
+                    <img src={logo} alt="logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <span style={{ fontSize: 24, color: C.t4 }}>+</span>
+                  )}
+                </motion.div>
+                {logo && (
+                  <motion.button
+                    onClick={(e) => { e.stopPropagation(); setLogo(null); }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: 13,
-                      flexShrink: 0,
-                      marginTop: 1,
-                      background: isCurrent ? C.t1 : "transparent",
-                      border: isCurrent ? "none" : `1px solid ${C.sep}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      fontSize: 10,
+                      color: C.t4,
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      marginBottom: 8,
+                      fontFamily: "'DM Mono', monospace",
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 600,
-                        color: isCurrent ? C.bg : C.t4,
-                        fontFamily: "'DM Mono', monospace",
-                      }}
-                    >
-                      {s.num}
-                    </span>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div
-                      style={{
-                        fontSize: 14,
-                        fontWeight: isCurrent ? 600 : 400,
-                        color: isCurrent ? C.t1 : C.t3,
-                        marginBottom: isCurrent ? 12 : 0,
-                      }}
-                    >
-                      {s.label}
-                    </div>
-                    {isCurrent && (
-                      <div>
-                        <div
-                          style={{ fontSize: 12, color: C.t3, marginBottom: 14, lineHeight: 1.7 }}
-                        >
-                          Configure your community workspace - artefact structure, rooms, sharing
-                          rules, and directory.
-                        </div>
-                        <input
-                          ref={logoRef}
-                          type="file"
-                          accept="image/*"
-                          style={{ display: "none" }}
-                          onChange={handleLogoUpload}
-                        />
-                        <motion.div
-                          onClick={() => (logo ? setLogo(null) : logoRef.current?.click())}
-                          whileHover={{ opacity: 0.8 }}
-                          whileTap={{ scale: 0.97 }}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 10,
-                            padding: "8px 12px",
-                            border: `1px solid ${logo ? C.t3 : C.sep}`,
-                            borderRadius: 8,
-                            cursor: "pointer",
-                            marginBottom: 16,
-                            transition: "border-color .2s",
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 28,
-                              height: 28,
-                              borderRadius: 6,
-                              background: logo ? "transparent" : C.edge,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0,
-                              overflow: "hidden",
-                              border: `1px solid ${C.sep}`,
-                            }}
-                          >
-                            {logo ? (
-                              <img
-                                src={logo}
-                                alt="logo"
-                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                              />
-                            ) : (
-                              <span style={{ fontSize: 13, color: C.t4 }}>+</span>
-                            )}
-                          </div>
-                          <div>
-                            <div
-                              style={{
-                                fontSize: 12,
-                                color: logo ? C.t1 : C.t3,
-                                fontFamily: "'DM Sans', sans-serif",
-                              }}
-                            >
-                              {logo ? "Logo uploaded" : "Upload community logo"}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: 9,
-                                color: C.t4,
-                                marginTop: 1,
-                                fontFamily: "'DM Mono', monospace",
-                                letterSpacing: ".03em",
-                              }}
-                            >
-                              {logo ? "click to remove" : "png, jpg, svg · optional"}
-                            </div>
-                          </div>
-                          {logo && (
-                            <span style={{ fontSize: 11, color: C.t4, marginLeft: 4 }}>×</span>
-                          )}
-                        </motion.div>
-                        <div>
-                          <motion.button
-                            onClick={advance}
-                            whileHover={{ opacity: 0.85 }}
-                            whileTap={{ scale: 0.97 }}
-                            style={{
-                              padding: "10px 24px",
-                              background: C.t1,
-                              border: "none",
-                              borderRadius: 9,
-                              color: C.bg,
-                              fontSize: 13,
-                              fontFamily: "'DM Sans', sans-serif",
-                              fontWeight: 500,
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                            }}
-                          >
-                            Start setup <span style={{ fontSize: 14 }}>→</span>
-                          </motion.button>
-                        </div>
-                      </div>
+                    remove logo
+                  </motion.button>
+                )}
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <div style={{ fontSize: 11, color: C.t4, marginBottom: 8, fontFamily: "'DM Mono', monospace", letterSpacing: ".04em", textTransform: "uppercase" }}>
+                  Launch your
+                </div>
+                <input
+                  type="text"
+                  value={communityName}
+                  onChange={(e) => setCommunityName(e.target.value)}
+                  placeholder="Community Name"
+                  style={{
+                    width: "100%",
+                    maxWidth: 280,
+                    fontSize: 24,
+                    fontWeight: 600,
+                    color: C.t1,
+                    background: "transparent",
+                    border: "none",
+                    borderBottom: `1px solid ${communityName ? "transparent" : C.sep}`,
+                    textAlign: "center",
+                    outline: "none",
+                    padding: "8px 0",
+                    fontFamily: "'DM Sans', sans-serif",
+                    letterSpacing: "-.025em",
+                    transition: "border-color 0.2s",
+                  }}
+                  onFocus={(e) => e.target.style.borderBottomColor = C.t3}
+                  onBlur={(e) => e.target.style.borderBottomColor = communityName ? "transparent" : C.sep}
+                />
+              </motion.div>
+
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                style={{ fontSize: 13, color: C.t3, marginTop: 16, lineHeight: 1.7, maxWidth: 320, margin: "16px auto 0" }}
+              >
+                Design how founders present themselves in your community.
+              </motion.p>
+            </div>
+
+            {/* Steps preview */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              style={{
+                background: C.edge,
+                borderRadius: 12,
+                padding: "16px 20px",
+                marginBottom: 24,
+                border: `1px solid ${C.sep}`,
+              }}
+            >
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                {WIZARD_STEPS.slice(1).map((s, idx) => (
+                  <div
+                    key={s.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      opacity: 0.7,
+                    }}
+                  >
+                    <span style={{ fontSize: 9, color: C.t4, fontFamily: "'DM Mono', monospace" }}>{idx + 1}</span>
+                    <span style={{ fontSize: 11, color: C.t2 }}>{s.label}</span>
+                    {idx < WIZARD_STEPS.length - 2 && (
+                      <span style={{ color: C.sep, marginLeft: 6 }}>·</span>
                     )}
                   </div>
-                </div>
+                ))}
               </div>
-            );
-          })}
-          <div style={{ height: 1, background: C.sep }} />
+            </motion.div>
+
+            {/* CTA */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              style={{ textAlign: "center" }}
+            >
+              <motion.button
+                onClick={advance}
+                whileHover={{ opacity: 0.9, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                style={{
+                  padding: "12px 32px",
+                  background: `linear-gradient(135deg, ${C.t1} 0%, ${dark ? "#555" : "#333"} 100%)`,
+                  border: "none",
+                  borderRadius: 10,
+                  color: C.bg,
+                  fontSize: 13,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  boxShadow: dark ? "0 4px 20px rgba(0,0,0,0.4)" : "0 4px 20px rgba(0,0,0,0.12)",
+                }}
+              >
+                Start setup
+                <span style={{ fontSize: 14, opacity: 0.8 }}>→</span>
+              </motion.button>
+              <div style={{ fontSize: 10, color: C.t4, marginTop: 12, fontFamily: "'DM Mono', monospace" }}>
+                Takes about 2 minutes
+              </div>
+            </motion.div>
+          </div>
         </div>
       </motion.div>
 
@@ -1236,22 +1338,61 @@ export function CommunityCreateWizard() {
             flexShrink: 0,
             borderRight: `1px solid ${C.sep}`,
             overflow: "auto",
-            padding: "36px 40px 80px",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <div style={{ marginBottom: 28 }}>
+          {/* Branded header */}
+          <div
+            style={{
+              padding: "16px 24px",
+              borderBottom: `1px solid ${C.sep}`,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexShrink: 0,
+            }}
+          >
             <div
               style={{
-                fontSize: 20,
-                fontWeight: 600,
-                color: C.t1,
-                letterSpacing: "-.025em",
-                lineHeight: 1.2,
+                width: 22,
+                height: 22,
+                borderRadius: 5,
+                background: logo ? "transparent" : C.edge,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+                border: `1px solid ${C.sep}`,
+                flexShrink: 0,
               }}
             >
-              Create your community
+              {logo ? (
+                <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span style={{ fontSize: 9, color: C.t3, fontWeight: 600 }}>C</span>
+              )}
             </div>
-            <div style={{ fontSize: 12, color: C.t3, marginTop: 5, lineHeight: 1.6 }}>
+            <span style={{ fontSize: 12, color: C.t1, fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }}>
+              {communityName || "New Community"}
+            </span>
+          </div>
+
+          <div style={{ padding: "24px 32px 80px", flex: 1, overflow: "auto" }}>
+          <div style={{ marginBottom: 24 }}>
+            <div
+              style={{
+                fontSize: 11,
+                color: C.t4,
+                marginBottom: 4,
+                fontFamily: "'DM Mono', monospace",
+                letterSpacing: ".04em",
+                textTransform: "uppercase",
+              }}
+            >
+              Setup
+            </div>
+            <div style={{ fontSize: 13, color: C.t2, lineHeight: 1.6 }}>
               Configure your workspace.
             </div>
           </div>
@@ -1512,42 +1653,8 @@ export function CommunityCreateWizard() {
                                   ))}
                                 </div>
                               </div>
-                              <div>
-                                <Lbl style={{ display: "block", marginBottom: 8 }}>
-                                  Filter options
-                                </Lbl>
-                                {(
-                                  [
-                                    ["industry", "Industry"],
-                                    ["skills", "Skills"],
-                                    ["stage", "Stage"],
-                                  ] as const
-                                ).map(([k, lbl]) => (
-                                  <div
-                                    key={k}
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "space-between",
-                                      padding: "7px 0",
-                                      borderBottom: `1px solid ${C.sep}`,
-                                    }}
-                                  >
-                                    <span
-                                      style={{
-                                        fontSize: 12,
-                                        color: C.t2,
-                                        fontFamily: "'DM Sans', sans-serif",
-                                      }}
-                                    >
-                                      {lbl}
-                                    </span>
-                                    <Toggle
-                                      on={config.directory.filters[k]}
-                                      onChange={(v) => upd(`directory.filters.${k}`, v)}
-                                    />
-                                  </div>
-                                ))}
+                              <div style={{ fontSize: 11, color: C.t3, marginTop: 8, lineHeight: 1.6 }}>
+                                Use AI search to find and filter members with natural language queries.
                               </div>
                             </div>
                           )}
@@ -1627,6 +1734,7 @@ export function CommunityCreateWizard() {
               );
             })}
           </div>
+          </div>
         </motion.div>
 
         {/* RIGHT panel - Artefact Preview using existing CompactCard */}
@@ -1640,8 +1748,8 @@ export function CommunityCreateWizard() {
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            alignItems: wizStep === 2 && expandedRoomId ? "stretch" : "center",
-            justifyContent: wizStep === 2 && expandedRoomId ? "stretch" : "center",
+            alignItems: (wizStep === 2 && expandedRoomId) || wizStep === 3 ? "stretch" : "center",
+            justifyContent: (wizStep === 2 && expandedRoomId) || wizStep === 3 ? "stretch" : "center",
             background: C.bg,
             overflow: "hidden",
             position: "relative",
@@ -1649,7 +1757,7 @@ export function CommunityCreateWizard() {
           }}
         >
           <AnimatePresence>
-            {!(wizStep === 2 && expandedRoomId) && (
+            {!(wizStep === 2 && expandedRoomId) && wizStep !== 3 && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1677,12 +1785,83 @@ export function CommunityCreateWizard() {
                 transition={{ duration: 0.28, ease: [0.22, 0.1, 0.36, 1] }}
                 style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, padding: 24 }}
               >
-                <ArtefactPreview
-                  config={config}
-                  showExpanded={true}
-                  focusedRoomId={expandedRoomId}
-                  fullscreen={true}
-                />
+                {/* View Toggle */}
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+                  <ViewToggle mode={previewViewMode} onChange={setPreviewViewMode} />
+                </div>
+
+                <AnimatePresence mode="wait">
+                  {previewViewMode === "page" ? (
+                    <motion.div
+                      key="page-view"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.28, ease: [0.22, 0.1, 0.36, 1] }}
+                      style={{ flex: 1, overflow: "auto", borderRadius: 12, border: `1px solid ${C.sep}` }}
+                    >
+                      <PageComposer
+                        rooms={config.rooms}
+                        getBlockContent={(blockId: string) => {
+                          for (const room of config.rooms) {
+                            const block = room.blocks.find((b) => b.id === blockId);
+                            if (block) {
+                              return getSampleContent(block.id, block.type);
+                            }
+                          }
+                          return "";
+                        }}
+                        accent={C.blue}
+                        activeRoomId={expandedRoomId}
+                      />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="workspace-view"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.28, ease: [0.22, 0.1, 0.36, 1] }}
+                      style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}
+                    >
+                      <ArtefactPreview
+                        config={config}
+                        showExpanded={true}
+                        focusedRoomId={expandedRoomId}
+                        fullscreen={true}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ) : wizStep === 3 ? (
+              <motion.div
+                key="directory-preview"
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.28, ease: [0.22, 0.1, 0.36, 1] }}
+                style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, padding: 24 }}
+              >
+                <motion.span
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.2 }}
+                  className="mono"
+                  style={{
+                    fontSize: 8,
+                    color: C.t4,
+                    letterSpacing: ".08em",
+                    textTransform: "uppercase",
+                    marginBottom: 12,
+                    textAlign: "center",
+                  }}
+                >
+                  directory preview
+                </motion.span>
+                <div style={{ flex: 1, minHeight: 0 }}>
+                  <MemberDirectoryPreview />
+                </div>
               </motion.div>
             ) : (
               <motion.div

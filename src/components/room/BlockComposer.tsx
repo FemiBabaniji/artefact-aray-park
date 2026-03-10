@@ -313,8 +313,11 @@ function BlockTextView({ block }: { block: Block }) {
 
   if (!content) {
     return (
-      <div style={{ padding: 16, color: C.t4, fontSize: 12, fontStyle: "italic" }}>
-        Empty text block
+      <div style={{ padding: 16 }}>
+        <div style={{ color: C.t3, fontSize: 12, marginBottom: 4 }}>Text</div>
+        <div style={{ color: C.t4, fontSize: 11, lineHeight: 1.5 }}>
+          Click to write narrative content, descriptions, or statements about yourself.
+        </div>
       </div>
     );
   }
@@ -338,15 +341,18 @@ function BlockImageView({ block }: { block: Block }) {
   if (!block.storagePath) {
     return (
       <div style={{
-        padding: 24,
+        padding: 20,
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        color: C.t4,
-        fontSize: 12,
         background: C.edge + "20",
+        gap: 6,
       }}>
-        ◫
+        <div style={{ color: C.t3, fontSize: 18 }}>{"\u25A3"}</div>
+        <div style={{ color: C.t4, fontSize: 11, textAlign: "center", lineHeight: 1.5 }}>
+          Click to add photos of your work, headshots, or visual references
+        </div>
       </div>
     );
   }
@@ -403,9 +409,20 @@ function BlockLinkView({ block }: { block: Block }) {
     );
   }
 
+  if (!block.content) {
+    return (
+      <div style={{ padding: 16 }}>
+        <div style={{ color: C.t3, fontSize: 12, marginBottom: 4 }}>Link</div>
+        <div style={{ color: C.t4, fontSize: 11, lineHeight: 1.5 }}>
+          Click to add links to your portfolio, articles, or social profiles
+        </div>
+      </div>
+    );
+  }
+
   return (
     <a href={block.content} target="_blank" rel="noopener noreferrer" style={{ display: "block", padding: 14, textDecoration: "none" }}>
-      <div style={{ fontSize: 12, color: C.blue }}>{block.content || "Empty link"}</div>
+      <div style={{ fontSize: 12, color: C.blue }}>{block.content}</div>
     </a>
   );
 }
@@ -416,8 +433,11 @@ function BlockEmbedView({ block }: { block: Block }) {
 
   if (!embedUrl) {
     return (
-      <div style={{ padding: 24, display: "flex", alignItems: "center", justifyContent: "center", color: C.t4, fontSize: 12 }}>
-        ▶ No embed
+      <div style={{ padding: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6 }}>
+        <div style={{ color: C.t3, fontSize: 18 }}>{"\u25B6"}</div>
+        <div style={{ color: C.t4, fontSize: 11, textAlign: "center", lineHeight: 1.5 }}>
+          Click to embed videos or audio from YouTube, Vimeo, Spotify, or SoundCloud
+        </div>
       </div>
     );
   }
@@ -661,37 +681,68 @@ function getEmbedUrl(url: string): string | null {
 function AddBlockButton({
   icon,
   label,
+  description,
   onClick,
   color,
 }: {
   icon: string;
   label: string;
+  description?: string;
   onClick: () => void;
   color?: string;
 }) {
   const C = useC();
+  const [hovered, setHovered] = useState(false);
 
   return (
-    <motion.button
-      onClick={onClick}
-      whileHover={{ scale: 1.02, background: color ? color + "22" : C.edge }}
-      whileTap={{ scale: 0.98 }}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 4,
-        padding: "6px 10px",
-        fontSize: 11,
-        color: color || C.t3,
-        background: C.edge + "50",
-        border: "none",
-        borderRadius: 4,
-        cursor: "pointer",
-      }}
-    >
-      <span>{icon}</span>
-      <span>{label}</span>
-    </motion.button>
+    <div style={{ position: "relative" }}>
+      <motion.button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        whileHover={{ scale: 1.02, background: color ? color + "22" : C.edge }}
+        whileTap={{ scale: 0.98 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          padding: "6px 10px",
+          fontSize: 11,
+          color: color || C.t3,
+          background: C.edge + "50",
+          border: "none",
+          borderRadius: 4,
+          cursor: "pointer",
+        }}
+      >
+        <span>{icon}</span>
+        <span>{label}</span>
+      </motion.button>
+      {description && hovered && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            marginTop: 6,
+            padding: "8px 10px",
+            background: C.bg,
+            border: `1px solid ${C.edge}`,
+            borderRadius: 6,
+            fontSize: 10,
+            color: C.t2,
+            lineHeight: 1.5,
+            width: 180,
+            zIndex: 20,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          }}
+        >
+          {description}
+        </motion.div>
+      )}
+    </div>
   );
 }
 
@@ -711,22 +762,22 @@ function BlockToolbar({
   const C = useC();
   const [showMore, setShowMore] = useState(false);
 
-  const basicBlocks: { type: BlockType; icon: string; label: string }[] = [
-    { type: "text", icon: "T", label: "Text" },
-    { type: "image", icon: "\u25A3", label: "Image" },
-    { type: "link", icon: "\u2197", label: "Link" },
-    { type: "embed", icon: "\u25B6", label: "Embed" },
+  const basicBlocks: { type: BlockType; icon: string; label: string; description: string }[] = [
+    { type: "text", icon: "T", label: "Text", description: "Write narrative content, descriptions, or statements about yourself" },
+    { type: "image", icon: "\u25A3", label: "Image", description: "Add photos of your work, headshots, or visual references" },
+    { type: "link", icon: "\u2197", label: "Link", description: "Reference your portfolio, articles, or social profiles" },
+    { type: "embed", icon: "\u25B6", label: "Embed", description: "Embed videos or audio from YouTube, Vimeo, Spotify" },
   ];
 
-  const typedBlocks: { type: BlockType; icon: string; label: string; color: string }[] = [
-    { type: "project", icon: "\u25A6", label: "Project", color: "#22c55e" },
-    { type: "skill", icon: "\u2713", label: "Skill", color: "#14b8a6" },
-    { type: "experience", icon: "\u2261", label: "Experience", color: "#f97316" },
-    { type: "education", icon: "\u2302", label: "Education", color: "#8b5cf6" },
-    { type: "certification", icon: "\u2714", label: "Certification", color: "#06b6d4" },
-    { type: "metric", icon: "#", label: "Metric", color: "#fbbf24" },
-    { type: "milestone", icon: "\u2605", label: "Milestone", color: "#a78bfa" },
-    { type: "relationship", icon: "\u2194", label: "Connection", color: "#ec4899" },
+  const typedBlocks: { type: BlockType; icon: string; label: string; color: string; description: string }[] = [
+    { type: "project", icon: "\u25A6", label: "Project", color: "#22c55e", description: "Showcase work you've built with your role, timeline, and outcomes" },
+    { type: "skill", icon: "\u2713", label: "Skill", color: "#14b8a6", description: "List technical or creative abilities with proficiency levels" },
+    { type: "experience", icon: "\u2261", label: "Experience", color: "#f97316", description: "Document your work history with roles and achievements" },
+    { type: "education", icon: "\u2302", label: "Education", color: "#8b5cf6", description: "Share degrees, institutions, and academic accomplishments" },
+    { type: "certification", icon: "\u2714", label: "Certification", color: "#06b6d4", description: "Display professional credentials with issuing organizations" },
+    { type: "metric", icon: "#", label: "Metric", color: "#fbbf24", description: "Highlight quantifiable achievements like users, revenue, growth" },
+    { type: "milestone", icon: "\u2605", label: "Milestone", color: "#a78bfa", description: "Mark launches, awards, or key moments in your journey" },
+    { type: "relationship", icon: "\u2194", label: "Connection", color: "#ec4899", description: "Reference mentors, collaborators, or key contacts" },
   ];
 
   return (
@@ -735,7 +786,7 @@ function BlockToolbar({
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {basicBlocks.map((b) => (
-            <AddBlockButton key={b.type} icon={b.icon} label={b.label} onClick={() => onAddBlock(b.type)} />
+            <AddBlockButton key={b.type} icon={b.icon} label={b.label} description={b.description} onClick={() => onAddBlock(b.type)} />
           ))}
           <motion.button
             onClick={() => setShowMore((p) => !p)}
@@ -791,6 +842,7 @@ function BlockToolbar({
                   key={b.type}
                   icon={b.icon}
                   label={b.label}
+                  description={b.description}
                   color={b.color}
                   onClick={() => {
                     onAddBlock(b.type);

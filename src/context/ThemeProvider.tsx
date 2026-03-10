@@ -34,7 +34,7 @@ type ThemeProviderProps = {
 };
 
 export function ThemeProvider({ children, accentColor }: ThemeProviderProps) {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
   const baseTheme = dark ? DARK : LIGHT;
   const theme = accentColor ? { ...baseTheme, green: accentColor } : baseTheme;
   const styleRef = useRef<HTMLStyleElement | null>(null);

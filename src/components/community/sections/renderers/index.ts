@@ -1,0 +1,9 @@
+export { HeroSection } from "./HeroSection";
+export { HeroBand } from "./HeroBand";
+export { ProfileSection } from "./ProfileSection";
+export { MetricsSection } from "./MetricsSection";
+export { GallerySection } from "./GallerySection";
+export { TimelineSection } from "./TimelineSection";
+export { DocumentsSection } from "./DocumentsSection";
+export { ContentSection } from "./ContentSection";
+export { AdditionalSection } from "./AdditionalSection";

@@ -488,26 +488,30 @@ function RelationshipEditor({ content, onChange, readOnly }: { content: Record<s
   );
 }
 
-// Block type icons and labels
-const BLOCK_TYPE_CONFIG: Record<BlockType, { icon: string; label: string; color: string }> = {
-  text: { icon: "T", label: "Text", color: "#94a3b8" },
-  image: { icon: "\u25A3", label: "Image", color: "#60a5fa" },
-  link: { icon: "\u2197", label: "Link", color: "#34d399" },
-  embed: { icon: "\u25B6", label: "Embed", color: "#fb7185" },
-  document: { icon: "\u25A4", label: "Document", color: "#f43f5e" },
-  metric: { icon: "#", label: "Metric", color: "#fbbf24" },
-  milestone: { icon: "\u2605", label: "Milestone", color: "#a78bfa" },
-  project: { icon: "\u25A6", label: "Project", color: "#22c55e" },
-  skill: { icon: "\u2713", label: "Skill", color: "#14b8a6" },
-  experience: { icon: "\u2261", label: "Experience", color: "#f97316" },
-  education: { icon: "\u2302", label: "Education", color: "#8b5cf6" },
-  certification: { icon: "\u2714", label: "Certification", color: "#06b6d4" },
-  relationship: { icon: "\u2194", label: "Connection", color: "#ec4899" },
+// Block type icons, labels, and descriptions
+const BLOCK_TYPE_CONFIG: Record<BlockType, { icon: string; label: string; color: string; description: string; hint: string }> = {
+  text: { icon: "T", label: "Text", color: "#94a3b8", description: "Write narrative content, descriptions, or statements", hint: "Share your story, describe your approach, or write about what matters to you" },
+  image: { icon: "\u25A3", label: "Image", color: "#60a5fa", description: "Add visuals to support your content", hint: "Upload photos of your work, headshots, or visual references" },
+  link: { icon: "\u2197", label: "Link", color: "#34d399", description: "Reference external work or resources", hint: "Add links to your portfolio, articles, or social profiles" },
+  embed: { icon: "\u25B6", label: "Embed", color: "#fb7185", description: "Embed videos, audio, or interactive content", hint: "Paste a YouTube, Vimeo, Spotify, or SoundCloud URL" },
+  document: { icon: "\u25A4", label: "Document", color: "#f43f5e", description: "Attach files and documents", hint: "Upload PDFs, slides, or other documents" },
+  metric: { icon: "#", label: "Metric", color: "#fbbf24", description: "Highlight quantifiable achievements", hint: "Show numbers that demonstrate your impact (users, revenue, growth)" },
+  milestone: { icon: "\u2605", label: "Milestone", color: "#a78bfa", description: "Mark significant events or achievements", hint: "Document launches, awards, or key moments in your journey" },
+  project: { icon: "\u25A6", label: "Project", color: "#22c55e", description: "Showcase work you've built or contributed to", hint: "Describe projects with your role, timeline, and outcomes" },
+  skill: { icon: "\u2713", label: "Skill", color: "#14b8a6", description: "List your technical or creative abilities", hint: "Add skills with your proficiency level and experience" },
+  experience: { icon: "\u2261", label: "Experience", color: "#f97316", description: "Document your work history", hint: "Add roles, companies, and key achievements" },
+  education: { icon: "\u2302", label: "Education", color: "#8b5cf6", description: "Share your academic background", hint: "List degrees, institutions, and accomplishments" },
+  certification: { icon: "\u2714", label: "Certification", color: "#06b6d4", description: "Display professional credentials", hint: "Add certifications with issuing organizations and dates" },
+  relationship: { icon: "\u2194", label: "Connection", color: "#ec4899", description: "Reference people in your network", hint: "Mentors, collaborators, or professional connections" },
 };
 
 export function TypedBlockEditor({ blockType, content, onChange, onDelete, readOnly }: TypedBlockEditorProps) {
   const C = useC();
   const config = BLOCK_TYPE_CONFIG[blockType];
+
+  // Check if content is essentially empty
+  const isEmpty = Object.keys(content).length === 0 ||
+    Object.values(content).every(v => v === undefined || v === "" || (Array.isArray(v) && v.length === 0));
 
   const renderEditor = () => {
     switch (blockType) {
@@ -571,7 +575,12 @@ export function TypedBlockEditor({ blockType, content, onChange, onDelete, readO
           >
             {config.icon}
           </span>
-          <span style={{ fontSize: 12, fontWeight: 500, color: C.t1 }}>{config.label}</span>
+          <div>
+            <span style={{ fontSize: 12, fontWeight: 500, color: C.t1 }}>{config.label}</span>
+            {isEmpty && (
+              <div style={{ fontSize: 10, color: C.t4, marginTop: 2 }}>{config.description}</div>
+            )}
+          </div>
         </div>
         {!readOnly && (
           <Btn onClick={onDelete} style={{ color: "#ef4444", fontSize: 10 }}>
@@ -579,6 +588,15 @@ export function TypedBlockEditor({ blockType, content, onChange, onDelete, readO
           </Btn>
         )}
       </div>
+
+      {/* Hint for empty blocks */}
+      {isEmpty && (
+        <div style={{ padding: "8px 14px", background: config.color + "08", borderBottom: `1px solid ${C.sep}` }}>
+          <div style={{ fontSize: 10, color: C.t3, lineHeight: 1.5 }}>
+            {config.hint}
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div style={{ padding: 14 }}>{renderEditor()}</div>

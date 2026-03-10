@@ -21,6 +21,8 @@ type RoomViewProps = {
   canDelete: boolean;
   onBack: () => void;
   compact?: boolean;
+  /** Disable all editing (blocks, rename, delete) */
+  readOnly?: boolean;
 };
 
 export function RoomView({
@@ -31,6 +33,7 @@ export function RoomView({
   canDelete,
   onBack,
   compact,
+  readOnly = false,
 }: RoomViewProps) {
   const C = useC();
   const [isEditingLabel, setIsEditingLabel] = useState(false);
@@ -91,12 +94,12 @@ export function RoomView({
             />
           ) : (
             <span
-              onClick={() => setIsEditingLabel(true)}
+              onClick={readOnly ? undefined : () => setIsEditingLabel(true)}
               style={{
                 fontSize,
                 fontWeight: 500,
                 color: C.t1,
-                cursor: "text",
+                cursor: readOnly ? "default" : "text",
               }}
             >
               {room.label}
@@ -104,64 +107,66 @@ export function RoomView({
           )}
         </div>
 
-        {/* Room menu */}
-        <div style={{ position: "relative" }}>
-          <Btn
-            onClick={() => setShowMenu(!showMenu)}
-            style={{ color: C.t3, fontSize }}
-          >
-            ...
-          </Btn>
-          {showMenu && (
-            <motion.div
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{
-                position: "absolute",
-                top: "100%",
-                right: 0,
-                marginTop: 4,
-                background: C.bg,
-                border: `1px solid ${C.edge}`,
-                borderRadius: 6,
-                padding: "4px 0",
-                minWidth: compact ? 100 : 120,
-                zIndex: 10,
-              }}
+        {/* Room menu - only when editable */}
+        {!readOnly && (
+          <div style={{ position: "relative" }}>
+            <Btn
+              onClick={() => setShowMenu(!showMenu)}
+              style={{ color: C.t3, fontSize }}
             >
-              <div
-                onClick={() => {
-                  setIsEditingLabel(true);
-                  setShowMenu(false);
-                }}
+              ...
+            </Btn>
+            {showMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
                 style={{
-                  padding: compact ? "6px 10px" : "8px 12px",
-                  fontSize: compact ? 11 : 12,
-                  color: C.t2,
-                  cursor: "pointer",
+                  position: "absolute",
+                  top: "100%",
+                  right: 0,
+                  marginTop: 4,
+                  background: C.bg,
+                  border: `1px solid ${C.edge}`,
+                  borderRadius: 6,
+                  padding: "4px 0",
+                  minWidth: compact ? 100 : 120,
+                  zIndex: 10,
                 }}
               >
-                Rename
-              </div>
-              {canDelete && (
                 <div
                   onClick={() => {
-                    removeRoom(room.id);
-                    onBack();
+                    setIsEditingLabel(true);
+                    setShowMenu(false);
                   }}
                   style={{
                     padding: compact ? "6px 10px" : "8px 12px",
                     fontSize: compact ? 11 : 12,
-                    color: "#ef4444",
+                    color: C.t2,
                     cursor: "pointer",
                   }}
                 >
-                  Delete room
+                  Rename
                 </div>
-              )}
-            </motion.div>
-          )}
-        </div>
+                {canDelete && (
+                  <div
+                    onClick={() => {
+                      removeRoom(room.id);
+                      onBack();
+                    }}
+                    style={{
+                      padding: compact ? "6px 10px" : "8px 12px",
+                      fontSize: compact ? 11 : 12,
+                      color: "#ef4444",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Delete room
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </div>
+        )}
       </div>
 
       {room.prompt && (
@@ -182,7 +187,7 @@ export function RoomView({
           blocks={room.blocks}
           purpose={room.prompt}
           onChange={onBlocksChange}
-          readOnly={false}
+          readOnly={readOnly}
           layout="vertical"
         />
       </div>
