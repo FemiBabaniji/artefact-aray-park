@@ -1672,7 +1672,10 @@ export function CommunityCreateWizard() {
 
         {/* RIGHT panel - Artefact Preview using existing CompactCard */}
         <motion.div
-          animate={{ x: started ? 0 : 50, opacity: started ? 1 : 0 }}
+          animate={{
+            x: started ? 0 : 50,
+            opacity: started ? 1 : 0,
+          }}
           transition={{ duration: 0.44, ease: [0.22, 0.1, 0.36, 1], delay: started ? 0.22 : 0 }}
           style={{
             flex: 1,
@@ -1683,78 +1686,101 @@ export function CommunityCreateWizard() {
             background: C.bg,
             overflow: "hidden",
             position: "relative",
+            transition: "align-items 0.28s ease, justify-content 0.28s ease",
           }}
         >
-          {!(wizStep === 2 && expandedRoomId) && (
-            <div
-              style={{
-                position: "absolute",
-                width: 300,
-                height: 300,
-                borderRadius: "50%",
-                background: `radial-gradient(circle, ${C.blue}08 0%, transparent 70%)`,
-                pointerEvents: "none",
-              }}
-            />
-          )}
-
-          {wizStep === 2 && expandedRoomId ? (
-            <motion.div
-              key={JSON.stringify(config.rooms) + wizStep + expandedRoomId}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.25, ease: [0.22, 0.1, 0.36, 1] }}
-              style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}
-            >
-              <ArtefactPreview
-                config={config}
-                showExpanded={true}
-                focusedRoomId={expandedRoomId}
-                fullscreen={true}
-              />
-            </motion.div>
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 16,
-                position: "relative",
-                zIndex: 1,
-              }}
-            >
-              <span
-                className="mono"
-                style={{
-                  fontSize: 8,
-                  color: C.t4,
-                  letterSpacing: ".08em",
-                  textTransform: "uppercase",
-                  marginBottom: 4,
-                }}
-              >
-                member artefact preview
-              </span>
-
+          <AnimatePresence>
+            {!(wizStep === 2 && expandedRoomId) && (
               <motion.div
-                key={JSON.stringify(config.rooms) + wizStep + (expandedRoomId || "all")}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, ease: [0.22, 0.1, 0.36, 1] }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.2 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  position: "absolute",
+                  width: 300,
+                  height: 300,
+                  borderRadius: "50%",
+                  background: `radial-gradient(circle, ${C.blue}08 0%, transparent 70%)`,
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence mode="wait">
+            {wizStep === 2 && expandedRoomId ? (
+              <motion.div
+                key="fullscreen-preview"
+                initial={{ opacity: 0, scale: 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.28, ease: [0.22, 0.1, 0.36, 1] }}
+                style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, padding: 24 }}
               >
                 <ArtefactPreview
                   config={config}
-                  showExpanded={wizStep === 2}
-                  focusedRoomId={null}
+                  showExpanded={true}
+                  focusedRoomId={expandedRoomId}
+                  fullscreen={true}
                 />
               </motion.div>
+            ) : (
+              <motion.div
+                key="compact-preview"
+                initial={{ opacity: 0, scale: 1.02 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.28, ease: [0.22, 0.1, 0.36, 1] }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 16,
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                <motion.span
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.2 }}
+                  className="mono"
+                  style={{
+                    fontSize: 8,
+                    color: C.t4,
+                    letterSpacing: ".08em",
+                    textTransform: "uppercase",
+                    marginBottom: 4,
+                  }}
+                >
+                  member artefact preview
+                </motion.span>
 
-              <span style={{ fontSize: 11, color: C.t4, lineHeight: 1.6 }}>
-                Updates live as you configure each step.
-              </span>
-            </div>
-          )}
+                <motion.div
+                  key={JSON.stringify(config.rooms) + wizStep}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, ease: [0.22, 0.1, 0.36, 1] }}
+                >
+                  <ArtefactPreview
+                    config={config}
+                    showExpanded={wizStep === 2}
+                    focusedRoomId={null}
+                  />
+                </motion.div>
+
+                <motion.span
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.2 }}
+                  style={{ fontSize: 11, color: C.t4, lineHeight: 1.6 }}
+                >
+                  Updates live as you configure each step.
+                </motion.span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </motion.div>
     </div>
