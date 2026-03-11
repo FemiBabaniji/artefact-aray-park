@@ -62,6 +62,517 @@ type CommunityConfig = {
   directory: DirectoryConfig;
 };
 
+// ── Community Presets ─────────────────────────────────────────────────────────
+
+type CommunityPreset = {
+  id: string;
+  label: string;
+  description: string;
+  rooms: RoomTemplate[];
+  sampleData: Record<string, string>;
+  directory: DirectoryConfig;
+};
+
+const COMMUNITY_PRESETS: CommunityPreset[] = [
+  // ── Startup Accelerator ─────────────────────────────────────────────────────
+  {
+    id: "accelerator",
+    label: "Startup Accelerator",
+    description: "For accelerators, incubators, and founder programs",
+    rooms: [
+      {
+        id: "identity", label: "Founder", type: "about",
+        shared: false, visibility: "public",
+        blocks: [
+          { id: "name", type: "text", label: "Name", prompt: "Your full name", required: true, layout: "headline", slideOrder: 0 },
+          { id: "title", type: "text", label: "Title", prompt: "Your role (e.g. Founder & CEO)", required: true, layout: "body", slideOrder: 1 },
+          { id: "bio", type: "text", label: "Bio", prompt: "Short bio about yourself", required: true, layout: "body", slideOrder: 2 },
+          { id: "photo", type: "image", label: "Photo", prompt: "Profile photo", required: false, layout: "media", slideOrder: 3 },
+          { id: "linkedin", type: "link", label: "LinkedIn", prompt: "Your LinkedIn profile", required: false, layout: "body", slideOrder: 4 },
+        ]
+      },
+      {
+        id: "startup", label: "Startup", type: "projects",
+        shared: true, visibility: "community",
+        blocks: [
+          { id: "startup_name", type: "text", label: "Company Name", prompt: "Your startup name", required: true, layout: "headline", slideOrder: 0 },
+          { id: "one_liner", type: "text", label: "One-liner", prompt: "What you do in one sentence", required: true, layout: "body", slideOrder: 1 },
+          { id: "stage", type: "text", label: "Stage", prompt: "Idea, Pre-seed, Seed, Series A, etc.", required: true, layout: "metric", slideOrder: 2 },
+          { id: "industry", type: "text", label: "Industry", prompt: "Your primary industry/sector", required: true, layout: "metric", slideOrder: 3 },
+          { id: "website", type: "link", label: "Website", prompt: "Company website", required: false, layout: "body", slideOrder: 4 },
+        ]
+      },
+      {
+        id: "pitch", label: "Pitch", type: "custom",
+        shared: true, visibility: "public",
+        blocks: [
+          { id: "problem", type: "text", label: "Problem", prompt: "The problem you're solving", required: true, layout: "headline", slideOrder: 0 },
+          { id: "solution", type: "text", label: "Solution", prompt: "Your unique solution", required: true, layout: "body", slideOrder: 1 },
+          { id: "market", type: "text", label: "Market", prompt: "Market size and opportunity", required: true, layout: "body", slideOrder: 2 },
+          { id: "traction", type: "text", label: "Traction", prompt: "Key achievements and milestones", required: true, layout: "body", slideOrder: 3 },
+          { id: "demo", type: "embed", label: "Demo", prompt: "Loom or video demo URL", required: false, layout: "media", slideOrder: 4 },
+          { id: "ask", type: "text", label: "The Ask", prompt: "What you're looking for (funding, advisors, etc.)", required: false, layout: "headline", slideOrder: 5 },
+        ]
+      },
+      {
+        id: "traction", label: "Metrics", type: "metrics",
+        shared: true, visibility: "private",
+        blocks: [
+          { id: "mrr", type: "metric", label: "MRR", prompt: "Monthly recurring revenue", required: false, layout: "metric", slideOrder: 0 },
+          { id: "users", type: "metric", label: "Users", prompt: "Active users or customers", required: false, layout: "metric", slideOrder: 1 },
+          { id: "growth", type: "metric", label: "Growth", prompt: "Month-over-month growth %", required: false, layout: "metric", slideOrder: 2 },
+          { id: "runway", type: "metric", label: "Runway", prompt: "Months of runway remaining", required: false, layout: "metric", slideOrder: 3 },
+        ]
+      },
+      {
+        id: "documents", label: "Documents", type: "custom",
+        shared: true, visibility: "community",
+        blocks: [
+          { id: "deck", type: "document", label: "Pitch Deck", prompt: "Upload your pitch deck", required: false, layout: "media", slideOrder: 0 },
+          { id: "one_pager", type: "document", label: "One Pager", prompt: "Company one-pager", required: false, layout: "media", slideOrder: 1 },
+          { id: "financials", type: "document", label: "Financials", prompt: "Financial projections", required: false, layout: "media", slideOrder: 2 },
+        ]
+      }
+    ],
+    sampleData: {
+      name: "Kwame Mensah",
+      title: "Founder & CEO",
+      bio: "Serial entrepreneur building AI infrastructure for communities. Previously founded DataStack (acquired 2021).",
+      linkedin: "https://linkedin.com/in/kwamemensah",
+      startup_name: "Artefact Labs",
+      one_liner: "Portfolio management infrastructure for founder communities.",
+      stage: "Seed",
+      industry: "B2B SaaS",
+      website: "https://artefact.dev",
+      problem: "Accelerators track founders in spreadsheets and lose context between cohorts.",
+      solution: "Structured artefacts that capture founder journeys and make portfolio insights searchable.",
+      market: "$4B founder community tools market, growing 28% annually.",
+      traction: "127 communities onboarded, 3,400 founders using the platform.",
+      demo: "https://loom.com/share/demo",
+      ask: "Raising $2M seed to expand enterprise sales team.",
+      mrr: "$24,000",
+      users: "3,400",
+      growth: "18%",
+      runway: "14",
+      deck: "pitch-deck.pdf",
+      one_pager: "one-pager.pdf",
+    },
+    directory: {
+      visibility: "community",
+      cardFields: ["name", "startup_name", "stage"],
+      sortFields: ["name", "stage"],
+      searchFields: ["name", "startup_name", "industry"],
+      filters: { industry: true, skills: false, stage: true },
+    },
+  },
+
+  // ── Investment Fund / VC ────────────────────────────────────────────────────
+  {
+    id: "fund",
+    label: "Investment Fund",
+    description: "For VCs, angels, and investment syndicates",
+    rooms: [
+      {
+        id: "identity", label: "Investor", type: "about",
+        shared: false, visibility: "public",
+        blocks: [
+          { id: "name", type: "text", label: "Name", prompt: "Your full name", required: true, layout: "headline", slideOrder: 0 },
+          { id: "title", type: "text", label: "Role", prompt: "Partner, Principal, Associate, etc.", required: true, layout: "body", slideOrder: 1 },
+          { id: "bio", type: "text", label: "Bio", prompt: "Investment background and thesis", required: true, layout: "body", slideOrder: 2 },
+          { id: "photo", type: "image", label: "Photo", prompt: "Profile photo", required: false, layout: "media", slideOrder: 3 },
+          { id: "linkedin", type: "link", label: "LinkedIn", prompt: "Your LinkedIn profile", required: false, layout: "body", slideOrder: 4 },
+          { id: "twitter", type: "link", label: "Twitter/X", prompt: "Your Twitter/X profile", required: false, layout: "body", slideOrder: 5 },
+        ]
+      },
+      {
+        id: "thesis", label: "Thesis", type: "custom",
+        shared: true, visibility: "public",
+        blocks: [
+          { id: "focus", type: "text", label: "Focus Areas", prompt: "Industries and verticals you invest in", required: true, layout: "headline", slideOrder: 0 },
+          { id: "stage_pref", type: "text", label: "Stage", prompt: "Pre-seed to Series B, etc.", required: true, layout: "metric", slideOrder: 1 },
+          { id: "check_size", type: "text", label: "Check Size", prompt: "Typical investment range", required: true, layout: "metric", slideOrder: 2 },
+          { id: "thesis_detail", type: "text", label: "Investment Thesis", prompt: "What excites you about founders", required: true, layout: "body", slideOrder: 3 },
+          { id: "value_add", type: "text", label: "Value Add", prompt: "How you help portfolio companies", required: true, layout: "body", slideOrder: 4 },
+        ]
+      },
+      {
+        id: "portfolio", label: "Portfolio", type: "projects",
+        shared: true, visibility: "public",
+        blocks: [
+          { id: "notable_1", type: "text", label: "Notable Investment 1", prompt: "Company name and outcome", required: false, layout: "body", slideOrder: 0 },
+          { id: "notable_2", type: "text", label: "Notable Investment 2", prompt: "Company name and outcome", required: false, layout: "body", slideOrder: 1 },
+          { id: "notable_3", type: "text", label: "Notable Investment 3", prompt: "Company name and outcome", required: false, layout: "body", slideOrder: 2 },
+          { id: "portfolio_link", type: "link", label: "Full Portfolio", prompt: "Link to full portfolio page", required: false, layout: "body", slideOrder: 3 },
+        ]
+      },
+      {
+        id: "dealflow", label: "Deal Flow", type: "custom",
+        shared: false, visibility: "private",
+        blocks: [
+          { id: "sourcing", type: "text", label: "Sourcing Notes", prompt: "How you found interesting deals this week", required: false, layout: "body", slideOrder: 0 },
+          { id: "pipeline", type: "text", label: "Pipeline", prompt: "Current deals in diligence", required: false, layout: "body", slideOrder: 1 },
+          { id: "passed", type: "text", label: "Passed Deals", prompt: "Recent passes and reasons", required: false, layout: "body", slideOrder: 2 },
+        ]
+      },
+    ],
+    sampleData: {
+      name: "Sarah Chen",
+      title: "General Partner",
+      bio: "GP at Horizon Ventures. 15 years in tech, former VP Product at Stripe. Led investments in 40+ companies with 3 unicorns.",
+      linkedin: "https://linkedin.com/in/sarahchen",
+      twitter: "https://twitter.com/sarahchen",
+      focus: "Fintech, Developer Tools, AI Infrastructure",
+      stage_pref: "Seed to Series A",
+      check_size: "$500K - $3M",
+      thesis_detail: "We back technical founders building infrastructure that makes developers 10x more productive.",
+      value_add: "Product strategy, go-to-market playbooks, enterprise sales intros, and follow-on connections.",
+      notable_1: "Dataflow (acquired by Snowflake, $340M)",
+      notable_2: "CodeShip (Series C, $2B valuation)",
+      notable_3: "FinAPI (Series B, $500M valuation)",
+      portfolio_link: "https://horizonvc.com/portfolio",
+      sourcing: "Met 3 promising AI infra founders at Cerebral Valley this week.",
+      pipeline: "Deep in diligence on an observability platform.",
+      passed: "Passed on crypto gaming - market timing concerns.",
+    },
+    directory: {
+      visibility: "community",
+      cardFields: ["name", "focus", "check_size"],
+      sortFields: ["name", "check_size"],
+      searchFields: ["name", "focus", "thesis_detail"],
+      filters: { industry: true, skills: false, stage: true },
+    },
+  },
+
+  // ── Creative Agency ─────────────────────────────────────────────────────────
+  {
+    id: "agency",
+    label: "Creative Agency",
+    description: "For design studios, creative collectives, and agencies",
+    rooms: [
+      {
+        id: "identity", label: "Creative", type: "about",
+        shared: false, visibility: "public",
+        blocks: [
+          { id: "name", type: "text", label: "Name", prompt: "Your full name", required: true, layout: "headline", slideOrder: 0 },
+          { id: "role", type: "text", label: "Role", prompt: "Designer, Director, Strategist, etc.", required: true, layout: "body", slideOrder: 1 },
+          { id: "bio", type: "text", label: "Bio", prompt: "Your creative background", required: true, layout: "body", slideOrder: 2 },
+          { id: "photo", type: "image", label: "Photo", prompt: "Profile photo", required: false, layout: "media", slideOrder: 3 },
+          { id: "portfolio_link", type: "link", label: "Portfolio", prompt: "Personal portfolio site", required: false, layout: "body", slideOrder: 4 },
+        ]
+      },
+      {
+        id: "skills", label: "Skills", type: "custom",
+        shared: false, visibility: "public",
+        blocks: [
+          { id: "primary", type: "text", label: "Primary Skill", prompt: "Brand, Product, Motion, 3D, etc.", required: true, layout: "headline", slideOrder: 0 },
+          { id: "tools", type: "text", label: "Tools", prompt: "Figma, After Effects, Blender, etc.", required: true, layout: "body", slideOrder: 1 },
+          { id: "specialties", type: "text", label: "Specialties", prompt: "Industries or styles you excel in", required: true, layout: "body", slideOrder: 2 },
+          { id: "experience", type: "metric", label: "Years Experience", prompt: "Years in the industry", required: false, layout: "metric", slideOrder: 3 },
+        ]
+      },
+      {
+        id: "work", label: "Work", type: "projects",
+        shared: true, visibility: "public",
+        blocks: [
+          { id: "project_1", type: "text", label: "Project 1", prompt: "Client and project description", required: true, layout: "body", slideOrder: 0 },
+          { id: "project_1_img", type: "image", label: "Project 1 Image", prompt: "Key visual from the project", required: false, layout: "media", slideOrder: 1 },
+          { id: "project_2", type: "text", label: "Project 2", prompt: "Client and project description", required: false, layout: "body", slideOrder: 2 },
+          { id: "project_2_img", type: "image", label: "Project 2 Image", prompt: "Key visual from the project", required: false, layout: "media", slideOrder: 3 },
+          { id: "project_3", type: "text", label: "Project 3", prompt: "Client and project description", required: false, layout: "body", slideOrder: 4 },
+          { id: "behance", type: "link", label: "Behance/Dribbble", prompt: "Full portfolio link", required: false, layout: "body", slideOrder: 5 },
+        ]
+      },
+      {
+        id: "availability", label: "Availability", type: "custom",
+        shared: false, visibility: "community",
+        blocks: [
+          { id: "status", type: "text", label: "Status", prompt: "Available, Booked, Selective", required: true, layout: "headline", slideOrder: 0 },
+          { id: "rate", type: "text", label: "Day Rate", prompt: "Your typical day rate", required: false, layout: "metric", slideOrder: 1 },
+          { id: "location", type: "text", label: "Location", prompt: "Remote, On-site, Hybrid", required: false, layout: "metric", slideOrder: 2 },
+          { id: "availability_notes", type: "text", label: "Notes", prompt: "Availability details", required: false, layout: "body", slideOrder: 3 },
+        ]
+      },
+    ],
+    sampleData: {
+      name: "Maya Rodriguez",
+      role: "Brand Designer",
+      bio: "Award-winning brand designer with 8 years crafting identities for startups and Fortune 500s. Believer in design systems that scale.",
+      portfolio_link: "https://mayarodriguez.design",
+      primary: "Brand Identity",
+      tools: "Figma, Illustrator, After Effects, Framer",
+      specialties: "Tech brands, D2C, Visual identity systems",
+      experience: "8",
+      project_1: "Stripe - Led visual refresh for Stripe Atlas, their startup incorporation product.",
+      project_2: "Notion - Created illustration system for Notion's enterprise launch campaign.",
+      project_3: "Linear - Brand guidelines and marketing site redesign.",
+      behance: "https://behance.net/mayarodriguez",
+      status: "Selective",
+      rate: "$1,500/day",
+      location: "Remote (PST timezone)",
+      availability_notes: "Taking on 2 new projects per quarter. Prefer 3-month minimum engagements.",
+    },
+    directory: {
+      visibility: "public",
+      cardFields: ["name", "primary", "status"],
+      sortFields: ["name", "primary"],
+      searchFields: ["name", "primary", "specialties"],
+      filters: { industry: false, skills: true, stage: false },
+    },
+  },
+
+  // ── Research Lab / Academic ─────────────────────────────────────────────────
+  {
+    id: "research",
+    label: "Research Lab",
+    description: "For academic labs, research groups, and think tanks",
+    rooms: [
+      {
+        id: "identity", label: "Researcher", type: "about",
+        shared: false, visibility: "public",
+        blocks: [
+          { id: "name", type: "text", label: "Name", prompt: "Your full name", required: true, layout: "headline", slideOrder: 0 },
+          { id: "title", type: "text", label: "Title", prompt: "PhD Student, Postdoc, Professor, etc.", required: true, layout: "body", slideOrder: 1 },
+          { id: "affiliation", type: "text", label: "Affiliation", prompt: "University or institution", required: true, layout: "body", slideOrder: 2 },
+          { id: "bio", type: "text", label: "Bio", prompt: "Research interests and background", required: true, layout: "body", slideOrder: 3 },
+          { id: "photo", type: "image", label: "Photo", prompt: "Profile photo", required: false, layout: "media", slideOrder: 4 },
+          { id: "scholar", type: "link", label: "Google Scholar", prompt: "Scholar profile link", required: false, layout: "body", slideOrder: 5 },
+        ]
+      },
+      {
+        id: "research", label: "Research", type: "custom",
+        shared: true, visibility: "public",
+        blocks: [
+          { id: "focus", type: "text", label: "Research Focus", prompt: "Primary research areas", required: true, layout: "headline", slideOrder: 0 },
+          { id: "current", type: "text", label: "Current Project", prompt: "What you're working on now", required: true, layout: "body", slideOrder: 1 },
+          { id: "methods", type: "text", label: "Methods", prompt: "Research methodologies you use", required: false, layout: "body", slideOrder: 2 },
+          { id: "funding", type: "text", label: "Funding", prompt: "Active grants or funding sources", required: false, layout: "body", slideOrder: 3 },
+        ]
+      },
+      {
+        id: "publications", label: "Publications", type: "projects",
+        shared: true, visibility: "public",
+        blocks: [
+          { id: "pub_1", type: "text", label: "Recent Paper 1", prompt: "Title, venue, year", required: true, layout: "body", slideOrder: 0 },
+          { id: "pub_1_link", type: "link", label: "Paper 1 Link", prompt: "ArXiv or publication link", required: false, layout: "body", slideOrder: 1 },
+          { id: "pub_2", type: "text", label: "Recent Paper 2", prompt: "Title, venue, year", required: false, layout: "body", slideOrder: 2 },
+          { id: "pub_2_link", type: "link", label: "Paper 2 Link", prompt: "ArXiv or publication link", required: false, layout: "body", slideOrder: 3 },
+          { id: "citations", type: "metric", label: "Citations", prompt: "Total citation count", required: false, layout: "metric", slideOrder: 4 },
+          { id: "h_index", type: "metric", label: "h-index", prompt: "Your h-index", required: false, layout: "metric", slideOrder: 5 },
+        ]
+      },
+      {
+        id: "collaborations", label: "Collaborations", type: "custom",
+        shared: false, visibility: "community",
+        blocks: [
+          { id: "seeking", type: "text", label: "Seeking", prompt: "Types of collaborations you're looking for", required: false, layout: "body", slideOrder: 0 },
+          { id: "offering", type: "text", label: "Offering", prompt: "Expertise or resources you can share", required: false, layout: "body", slideOrder: 1 },
+          { id: "open_problems", type: "text", label: "Open Problems", prompt: "Interesting questions in your field", required: false, layout: "body", slideOrder: 2 },
+        ]
+      },
+    ],
+    sampleData: {
+      name: "Dr. James Liu",
+      title: "Assistant Professor",
+      affiliation: "MIT Computer Science & Artificial Intelligence Lab",
+      bio: "I study how large language models reason and fail. My work spans interpretability, evaluation, and human-AI collaboration.",
+      scholar: "https://scholar.google.com/citations?user=jamesliu",
+      focus: "AI Safety, Mechanistic Interpretability, LLM Evaluation",
+      current: "Developing new methods to understand circuit-level computation in transformer models.",
+      methods: "Causal interventions, probing classifiers, behavioral evaluations",
+      funding: "NSF CAREER Award, OpenAI Superalignment Grant",
+      pub_1: "Towards Monosemanticity: Decomposing Language Models, Nature 2024",
+      pub_1_link: "https://arxiv.org/abs/2024.monosemanticity",
+      pub_2: "Evaluating the Emergent World Model in GPT-4, ICML 2024",
+      pub_2_link: "https://arxiv.org/abs/2024.worldmodel",
+      citations: "4,230",
+      h_index: "18",
+      seeking: "Industry collaborations for compute access, co-advising opportunities",
+      offering: "Interpretability expertise, evaluation frameworks, access to custom datasets",
+      open_problems: "How do we measure whether a model truly understands vs pattern matches?",
+    },
+    directory: {
+      visibility: "public",
+      cardFields: ["name", "focus", "affiliation"],
+      sortFields: ["name", "citations"],
+      searchFields: ["name", "focus", "current"],
+      filters: { industry: false, skills: true, stage: false },
+    },
+  },
+
+  // ── Freelancer Network ──────────────────────────────────────────────────────
+  {
+    id: "freelancer",
+    label: "Freelancer Network",
+    description: "For consultants, contractors, and independent professionals",
+    rooms: [
+      {
+        id: "identity", label: "Profile", type: "about",
+        shared: false, visibility: "public",
+        blocks: [
+          { id: "name", type: "text", label: "Name", prompt: "Your full name", required: true, layout: "headline", slideOrder: 0 },
+          { id: "headline", type: "text", label: "Headline", prompt: "What you do in one line", required: true, layout: "body", slideOrder: 1 },
+          { id: "bio", type: "text", label: "Bio", prompt: "Your background and approach", required: true, layout: "body", slideOrder: 2 },
+          { id: "photo", type: "image", label: "Photo", prompt: "Profile photo", required: false, layout: "media", slideOrder: 3 },
+          { id: "website", type: "link", label: "Website", prompt: "Your personal site", required: false, layout: "body", slideOrder: 4 },
+        ]
+      },
+      {
+        id: "services", label: "Services", type: "custom",
+        shared: true, visibility: "public",
+        blocks: [
+          { id: "primary_service", type: "text", label: "Primary Service", prompt: "Your main offering", required: true, layout: "headline", slideOrder: 0 },
+          { id: "services_list", type: "text", label: "All Services", prompt: "List of services you offer", required: true, layout: "body", slideOrder: 1 },
+          { id: "ideal_client", type: "text", label: "Ideal Client", prompt: "Who you work best with", required: true, layout: "body", slideOrder: 2 },
+          { id: "process", type: "text", label: "Process", prompt: "How you typically work", required: false, layout: "body", slideOrder: 3 },
+        ]
+      },
+      {
+        id: "rates", label: "Rates", type: "metrics",
+        shared: false, visibility: "community",
+        blocks: [
+          { id: "hourly", type: "metric", label: "Hourly Rate", prompt: "Your hourly rate", required: false, layout: "metric", slideOrder: 0 },
+          { id: "project_min", type: "metric", label: "Project Minimum", prompt: "Minimum project engagement", required: false, layout: "metric", slideOrder: 1 },
+          { id: "retainer", type: "metric", label: "Monthly Retainer", prompt: "Typical retainer rate", required: false, layout: "metric", slideOrder: 2 },
+          { id: "availability", type: "text", label: "Availability", prompt: "Current availability status", required: true, layout: "headline", slideOrder: 3 },
+        ]
+      },
+      {
+        id: "testimonials", label: "Testimonials", type: "custom",
+        shared: true, visibility: "public",
+        blocks: [
+          { id: "testimonial_1", type: "text", label: "Testimonial 1", prompt: "Client quote with name", required: false, layout: "body", slideOrder: 0 },
+          { id: "testimonial_2", type: "text", label: "Testimonial 2", prompt: "Client quote with name", required: false, layout: "body", slideOrder: 1 },
+          { id: "clients", type: "text", label: "Notable Clients", prompt: "Companies you've worked with", required: false, layout: "body", slideOrder: 2 },
+        ]
+      },
+    ],
+    sampleData: {
+      name: "Alex Rivera",
+      headline: "Fractional CTO for seed-stage startups",
+      bio: "I help technical founders ship their MVP in 90 days. 12 years engineering experience at Google and 3 startups. I've seen what works.",
+      website: "https://alexrivera.dev",
+      primary_service: "Fractional CTO",
+      services_list: "Technical architecture, MVP development, Engineering hiring, Code review, Investor due diligence",
+      ideal_client: "Seed-stage startups with a non-technical founder who need to ship fast and hire their first engineer.",
+      process: "1. Two-week architecture sprint, 2. Weekly sync + async support, 3. Handoff to your new team.",
+      hourly: "$300",
+      project_min: "$15,000",
+      retainer: "$8,000/mo",
+      availability: "2 slots available",
+      testimonial_1: "\"Alex helped us go from idea to launched product in 8 weeks. Worth every penny.\" — Sarah Kim, Founder @ Bloom",
+      testimonial_2: "\"The architecture Alex designed scaled to 100K users without a hiccup.\" — Marcus Chen, CEO @ DataFlow",
+      clients: "Stripe, Y Combinator companies, Techstars Atlanta cohort",
+    },
+    directory: {
+      visibility: "community",
+      cardFields: ["name", "primary_service", "availability"],
+      sortFields: ["name", "hourly"],
+      searchFields: ["name", "primary_service", "services_list"],
+      filters: { industry: true, skills: true, stage: false },
+    },
+  },
+
+  // ── Developer Community ─────────────────────────────────────────────────────
+  {
+    id: "devs",
+    label: "Developer Community",
+    description: "For developer groups, OSS maintainers, and tech communities",
+    rooms: [
+      {
+        id: "identity", label: "Developer", type: "about",
+        shared: false, visibility: "public",
+        blocks: [
+          { id: "name", type: "text", label: "Name", prompt: "Your name or handle", required: true, layout: "headline", slideOrder: 0 },
+          { id: "tagline", type: "text", label: "Tagline", prompt: "What you build or work on", required: true, layout: "body", slideOrder: 1 },
+          { id: "bio", type: "text", label: "Bio", prompt: "Your dev journey", required: true, layout: "body", slideOrder: 2 },
+          { id: "photo", type: "image", label: "Photo", prompt: "Profile photo", required: false, layout: "media", slideOrder: 3 },
+          { id: "github", type: "link", label: "GitHub", prompt: "Your GitHub profile", required: true, layout: "body", slideOrder: 4 },
+          { id: "twitter", type: "link", label: "Twitter/X", prompt: "Your Twitter/X", required: false, layout: "body", slideOrder: 5 },
+        ]
+      },
+      {
+        id: "stack", label: "Stack", type: "custom",
+        shared: true, visibility: "public",
+        blocks: [
+          { id: "languages", type: "text", label: "Languages", prompt: "Languages you know well", required: true, layout: "body", slideOrder: 0 },
+          { id: "frameworks", type: "text", label: "Frameworks", prompt: "Frameworks and tools you use", required: true, layout: "body", slideOrder: 1 },
+          { id: "interests", type: "text", label: "Interests", prompt: "Areas you're exploring", required: true, layout: "body", slideOrder: 2 },
+          { id: "experience", type: "metric", label: "Years Coding", prompt: "Years of experience", required: false, layout: "metric", slideOrder: 3 },
+        ]
+      },
+      {
+        id: "projects", label: "Projects", type: "projects",
+        shared: true, visibility: "public",
+        blocks: [
+          { id: "project_1", type: "text", label: "Project 1", prompt: "Name and description", required: true, layout: "headline", slideOrder: 0 },
+          { id: "project_1_link", type: "link", label: "Project 1 Link", prompt: "GitHub or live link", required: false, layout: "body", slideOrder: 1 },
+          { id: "project_1_stars", type: "metric", label: "Stars", prompt: "GitHub stars", required: false, layout: "metric", slideOrder: 2 },
+          { id: "project_2", type: "text", label: "Project 2", prompt: "Name and description", required: false, layout: "headline", slideOrder: 3 },
+          { id: "project_2_link", type: "link", label: "Project 2 Link", prompt: "GitHub or live link", required: false, layout: "body", slideOrder: 4 },
+        ]
+      },
+      {
+        id: "looking_for", label: "Looking For", type: "custom",
+        shared: false, visibility: "community",
+        blocks: [
+          { id: "open_to", type: "text", label: "Open To", prompt: "Job, collab, mentorship, etc.", required: true, layout: "headline", slideOrder: 0 },
+          { id: "help_with", type: "text", label: "Can Help With", prompt: "What you can help others with", required: false, layout: "body", slideOrder: 1 },
+          { id: "want_to_learn", type: "text", label: "Want to Learn", prompt: "What you want to learn", required: false, layout: "body", slideOrder: 2 },
+        ]
+      },
+    ],
+    sampleData: {
+      name: "Taylor Kim",
+      tagline: "Building open-source tools for AI developers",
+      bio: "Staff engineer by day, OSS maintainer by night. I believe in tools that get out of your way.",
+      github: "https://github.com/taylorkim",
+      twitter: "https://twitter.com/taylorkim_dev",
+      languages: "TypeScript, Rust, Python, Go",
+      frameworks: "React, Next.js, tRPC, Prisma, FastAPI",
+      interests: "Local-first software, AI agents, Developer experience",
+      experience: "10",
+      project_1: "VectorDB-JS: TypeScript client for vector databases",
+      project_1_link: "https://github.com/taylorkim/vectordb-js",
+      project_1_stars: "2,340",
+      project_2: "AI-Shell: Natural language terminal commands",
+      project_2_link: "https://github.com/taylorkim/ai-shell",
+      open_to: "Open source collaborations, conference speaking",
+      help_with: "TypeScript architecture, OSS project maintenance, Developer tooling",
+      want_to_learn: "Rust internals, distributed systems, WebAssembly",
+    },
+    directory: {
+      visibility: "public",
+      cardFields: ["name", "tagline", "languages"],
+      sortFields: ["name", "experience"],
+      searchFields: ["name", "languages", "frameworks"],
+      filters: { industry: false, skills: true, stage: false },
+    },
+  },
+];
+
+// Helper to get preset by ID
+function getPresetById(id: string): CommunityPreset {
+  return COMMUNITY_PRESETS.find(p => p.id === id) || COMMUNITY_PRESETS[0];
+}
+
+// Helper to get sample content for a block from preset
+function getSampleContentFromPreset(preset: CommunityPreset, blockId: string, blockType: string): string {
+  if (preset.sampleData[blockId] !== undefined) {
+    return preset.sampleData[blockId];
+  }
+
+  const typeMap: Record<string, string> = {
+    text: "Sample content for this field.",
+    metric: "$10K",
+    image: "",
+    document: "document.pdf",
+    embed: "",
+    link: "https://example.com",
+  };
+
+  return typeMap[blockType] || "Sample content";
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const WIZARD_STEPS: WizardStep[] = [
@@ -187,7 +698,14 @@ const SAMPLE_MEMBER = {
   one_pager: "one-pager.pdf",
 };
 
-function getSampleContent(blockId: string, blockType: string): string {
+function getSampleContent(blockId: string, blockType: string, presetId?: string): string {
+  // Use preset-specific sample data if preset is provided
+  if (presetId) {
+    const preset = getPresetById(presetId);
+    return getSampleContentFromPreset(preset, blockId, blockType);
+  }
+
+  // Fallback to legacy SAMPLE_MEMBER for backwards compatibility
   const idMap: Record<string, string> = {
     name: SAMPLE_MEMBER.name,
     bio: SAMPLE_MEMBER.bio,
@@ -232,7 +750,7 @@ type TypingState = {
   };
 };
 
-function useGhostTyping(rooms: RoomTemplate[]) {
+function useGhostTyping(rooms: RoomTemplate[], presetId?: string) {
   const [typingState, setTypingState] = useState<TypingState>({});
   const intervalsRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
 
@@ -241,11 +759,11 @@ function useGhostTyping(rooms: RoomTemplate[]) {
     const map: Record<string, string> = {};
     for (const room of rooms) {
       for (const block of room.blocks) {
-        map[block.id] = getSampleContent(block.id, block.type);
+        map[block.id] = getSampleContent(block.id, block.type, presetId);
       }
     }
     return map;
-  }, [rooms]);
+  }, [rooms, presetId]);
 
   // Detect changes and start typing animations
   useEffect(() => {
@@ -780,11 +1298,13 @@ function ArtefactPreview({
   showExpanded = false,
   focusedRoomId,
   fullscreen = false,
+  presetId = "accelerator",
 }: {
   config: CommunityConfig;
   showExpanded?: boolean;
   focusedRoomId?: string | null;
   fullscreen?: boolean;
+  presetId?: string;
 }) {
   const C = useC();
   const { dark, toggle: toggleTheme } = useTheme();
@@ -796,7 +1316,7 @@ function ArtefactPreview({
   const cc = theme.colors.find((c) => c.id === effectiveColorId) || theme.colors[0];
 
   // Ghost typing effect
-  const { getDisplayedContent } = useGhostTyping(config.rooms);
+  const { getDisplayedContent } = useGhostTyping(config.rooms, presetId);
 
   // Convert RoomTemplate[] to StandaloneRoom[] for preview with sample content
   const mockRooms: StandaloneRoom[] = useMemo(() => {
@@ -808,7 +1328,7 @@ function ArtefactPreview({
       visibility: room.visibility === "public" ? ("public" as const) : ("private" as const),
       orderIndex: idx,
       blocks: room.blocks.map((block, bIdx) => {
-        const sampleContent = getSampleContent(block.id, block.type);
+        const sampleContent = getSampleContent(block.id, block.type, presetId);
         const displayedContent = getDisplayedContent(block.id, sampleContent);
         return {
           id: block.id,
@@ -820,20 +1340,20 @@ function ArtefactPreview({
         };
       }),
     }));
-  }, [config.rooms, getDisplayedContent]);
+  }, [config.rooms, getDisplayedContent, presetId]);
 
-  // Sample member identity
-  const mockIdentity: Identity = useMemo(
-    () => ({
-      name: SAMPLE_MEMBER.name,
-      title: SAMPLE_MEMBER.title,
-      bio: SAMPLE_MEMBER.bio,
-      location: SAMPLE_MEMBER.location,
+  // Sample member identity - use preset-specific data
+  const mockIdentity: Identity = useMemo(() => {
+    const preset = getPresetById(presetId);
+    return {
+      name: preset.sampleData.name || SAMPLE_MEMBER.name,
+      title: preset.sampleData.title || preset.sampleData.headline || SAMPLE_MEMBER.title,
+      bio: preset.sampleData.bio || SAMPLE_MEMBER.bio,
+      location: preset.sampleData.location || SAMPLE_MEMBER.location,
       skills: ["Product", "Engineering"],
       links: [],
-    }),
-    []
-  );
+    };
+  }, [presetId]);
 
   if (showExpanded) {
     return (
@@ -887,6 +1407,18 @@ export function CommunityCreateWizard() {
   const [config, setConfig] = useState<CommunityConfig>(DEFAULT_CONFIG);
   const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
   const [previewViewMode, setPreviewViewMode] = useState<PreviewViewMode>("workspace");
+  const [selectedPresetId, setSelectedPresetId] = useState<string>("accelerator");
+
+  // Apply a preset to the config
+  const applyPreset = (presetId: string) => {
+    const preset = getPresetById(presetId);
+    setSelectedPresetId(presetId);
+    setConfig(prev => ({
+      ...prev,
+      rooms: preset.rooms,
+      directory: preset.directory,
+    }));
+  };
 
   const upd = (path: string, val: unknown) => {
     setConfig((prev) => {
@@ -1479,8 +2011,75 @@ export function CommunityCreateWizard() {
                         <div style={{ paddingLeft: 34, paddingBottom: 16 }}>
                           {/* Step content */}
                           {s.id === "welcome" && (
-                            <div style={{ fontSize: 12, color: C.t3, lineHeight: 1.7 }}>
-                              Setup complete - you can revisit any step above.
+                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                              <Lbl style={{ display: "block" }}>Community Type</Lbl>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(2, 1fr)",
+                                  gap: 8,
+                                }}
+                              >
+                                {COMMUNITY_PRESETS.map((preset) => (
+                                  <motion.button
+                                    key={preset.id}
+                                    onClick={() => applyPreset(preset.id)}
+                                    whileHover={{ scale: 1.01 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    animate={{
+                                      borderColor: selectedPresetId === preset.id ? C.blue : C.sep,
+                                      background: selectedPresetId === preset.id ? `${C.blue}08` : "transparent",
+                                    }}
+                                    style={{
+                                      padding: "10px 12px",
+                                      border: `1.5px solid ${C.sep}`,
+                                      borderRadius: 8,
+                                      background: "transparent",
+                                      textAlign: "left",
+                                      cursor: "pointer",
+                                      position: "relative",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontSize: 12,
+                                        fontWeight: 500,
+                                        color: selectedPresetId === preset.id ? C.t1 : C.t2,
+                                        marginBottom: 2,
+                                      }}
+                                    >
+                                      {preset.label}
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontSize: 10,
+                                        color: C.t4,
+                                        lineHeight: 1.4,
+                                      }}
+                                    >
+                                      {preset.description}
+                                    </div>
+                                    {selectedPresetId === preset.id && (
+                                      <motion.div
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        style={{
+                                          position: "absolute",
+                                          top: 6,
+                                          right: 6,
+                                          width: 6,
+                                          height: 6,
+                                          borderRadius: "50%",
+                                          background: C.blue,
+                                        }}
+                                      />
+                                    )}
+                                  </motion.button>
+                                ))}
+                              </div>
+                              <div style={{ fontSize: 10, color: C.t4, marginTop: 4 }}>
+                                {COMMUNITY_PRESETS.find(p => p.id === selectedPresetId)?.rooms.length || 0} rooms pre-configured with example content
+                              </div>
                             </div>
                           )}
 
@@ -1806,7 +2405,7 @@ export function CommunityCreateWizard() {
                           for (const room of config.rooms) {
                             const block = room.blocks.find((b) => b.id === blockId);
                             if (block) {
-                              return getSampleContent(block.id, block.type);
+                              return getSampleContent(block.id, block.type, selectedPresetId);
                             }
                           }
                           return "";
@@ -1829,6 +2428,7 @@ export function CommunityCreateWizard() {
                         showExpanded={true}
                         focusedRoomId={expandedRoomId}
                         fullscreen={true}
+                        presetId={selectedPresetId}
                       />
                     </motion.div>
                   )}
@@ -1905,6 +2505,7 @@ export function CommunityCreateWizard() {
                     config={config}
                     showExpanded={wizStep === 2}
                     focusedRoomId={null}
+                    presetId={selectedPresetId}
                   />
                 </motion.div>
 

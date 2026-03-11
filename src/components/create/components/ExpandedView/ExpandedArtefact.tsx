@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useC } from "@/hooks/useC";
 import { useIsMobile } from "@/hooks/useBreakpoint";
-import { FADE, SP, SPF } from "@/lib/motion";
+import { FADE } from "@/lib/motion";
 import { useGuestArtefactContext } from "@/context/GuestArtefactContext";
 import { Lbl } from "@/components/primitives/Lbl";
 import { Btn } from "@/components/primitives/Btn";
@@ -13,7 +13,7 @@ import { DrillTile, DrillOverlay, RoomFullscreen } from "../DrillView";
 import { IdentityEditor } from "./IdentityEditor";
 import { RoomView } from "./RoomView";
 import { IngestContent } from "@/components/ingest/IngestContent";
-import { PublicArtefactView } from "@/components/create/PublicArtefactView";
+import { PageComposer } from "@/components/community/sections/PageComposer";
 import type { Block } from "@/types/room";
 import type { CardTheme } from "../../types";
 import type { DocumentBlock } from "@/types/document";
@@ -271,15 +271,28 @@ export function ExpandedArtefact({
             background: C.void,
           }}
         >
-          <PublicArtefactView
-            artefact={{
-              id: state.sessionId,
-              identity: state.identity,
-              rooms: state.rooms,
-              createdAt: state.createdAt,
-              updatedAt: new Date().toISOString(),
+          <PageComposer
+            rooms={state.rooms.map((room) => ({
+              id: room.id,
+              label: room.label,
+              type: room.key || "custom",
+              blocks: room.blocks.map((block) => ({
+                id: block.id,
+                type: block.blockType,
+                label: block.caption || block.blockType,
+              })),
+            }))}
+            getBlockContent={(blockId: string) => {
+              for (const room of state.rooms) {
+                const block = room.blocks.find((b) => b.id === blockId);
+                if (block) {
+                  return block.content || "";
+                }
+              }
+              return "";
             }}
             accent={accent}
+            activeRoomId={activeRoomId || state.rooms[0]?.id}
           />
         </motion.div>
         ) : layout === "list" ? (
