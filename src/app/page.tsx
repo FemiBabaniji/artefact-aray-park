@@ -154,7 +154,7 @@ function Frame({
         background: "rgba(255,255,255,0.92)",
         border: `1px solid ${C.sep}`,
         borderRadius: 22,
-        boxShadow: "0 24px 70px rgba(15,23,42,0.08)",
+        boxShadow: "0 10px 30px rgba(15,23,42,0.04)",
         ...style,
       }}
     >
@@ -227,12 +227,9 @@ function SourcePanel({
   return (
     <motion.div
       animate={{
-        y: active ? -3 : 0,
-        boxShadow: active
-          ? "0 16px 40px rgba(29,78,216,0.12)"
-          : "0 8px 24px rgba(15,23,42,0.06)",
+        opacity: active ? 1 : 0.82,
       }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.25 }}
       style={{
         background: "rgba(255,255,255,.98)",
         border: active ? `1px solid rgba(29,78,216,.18)` : `1px solid ${C.sep}`,
@@ -318,17 +315,14 @@ function ArtefactPanel({
   stage: number;
   compact?: boolean;
 }) {
-  const pulse = stage >= 2 && stage < 4;
+  const pulse = stage === 2;
 
   return (
     <motion.div
       animate={{
-        y: pulse ? -4 : 0,
-        boxShadow: pulse
-          ? "0 18px 48px rgba(29,78,216,0.16)"
-          : "0 10px 28px rgba(15,23,42,0.06)",
+        opacity: stage >= 2 ? 1 : 0.84,
       }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.25 }}
       style={{
         background: "#111214",
         border: `1px solid ${
@@ -370,14 +364,14 @@ function ArtefactPanel({
             color: pulse ? "#93c5fd" : "rgba(255,255,255,.3)",
           }}
         >
-          {stage < 2 ? "awaiting pull" : stage < 4 ? "compressing" : "approved"}
+          {stage < 2 ? "awaiting pull" : stage < 3 ? "compressing" : "approved"}
         </div>
       </div>
       <div style={{ padding: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
           <motion.div
-            animate={{ scale: pulse ? 1.08 : 1, rotate: pulse ? -2 : 0 }}
-            transition={{ duration: 0.35 }}
+            animate={{ scale: pulse ? 1.03 : 1 }}
+            transition={{ duration: 0.25 }}
           >
             <LogoMark
               size={22}
@@ -489,12 +483,9 @@ function SalesRoomPanel({
   return (
     <motion.div
       animate={{
-        y: active ? -3 : 0,
-        boxShadow: active
-          ? "0 16px 42px rgba(29,78,216,0.14)"
-          : "0 8px 24px rgba(15,23,42,0.06)",
+        opacity: active ? 1 : 0.82,
       }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.25 }}
       style={{
         background: "rgba(255,255,255,.98)",
         border: active ? `1px solid rgba(29,78,216,.18)` : `1px solid ${C.sep}`,
@@ -605,12 +596,10 @@ function SalesRoomPanel({
   );
 }
 
-function FlowConnector({
-  active,
+function SyncConnector({
   progress,
 }: {
-  active: boolean;
-  progress: boolean;
+  progress: number;
 }) {
   const C = useC();
 
@@ -618,104 +607,84 @@ function FlowConnector({
     <div
       style={{
         position: "relative",
-        width: 58,
-        minHeight: 120,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        width: 72,
+        height: 180,
+        alignSelf: "center",
       }}
     >
-      <div
+      <svg
+        viewBox="0 0 72 180"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+      >
+        <path
+          d="M6 90 C22 90, 24 52, 36 52 C48 52, 50 90, 66 90"
+          fill="none"
+          stroke="rgba(15,23,42,.16)"
+          strokeDasharray="4 5"
+          strokeLinecap="round"
+        />
+        <path
+          d="M6 90 C22 90, 24 128, 36 128 C48 128, 50 90, 66 90"
+          fill="none"
+          stroke="rgba(15,23,42,.16)"
+          strokeDasharray="4 5"
+          strokeLinecap="round"
+        />
+        <motion.path
+          d="M6 90 C22 90, 24 52, 36 52 C48 52, 50 90, 66 90"
+          fill="none"
+          stroke={C.blue}
+          strokeLinecap="round"
+          strokeWidth="1.5"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: progress }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+        />
+        <motion.path
+          d="M6 90 C22 90, 24 128, 36 128 C48 128, 50 90, 66 90"
+          fill="none"
+          stroke={C.blue}
+          strokeLinecap="round"
+          strokeWidth="1.5"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: progress }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+        />
+      </svg>
+      <motion.div
+        animate={{
+          left: `${8 + progress * 56}px`,
+          opacity: progress > 0 ? 1 : 0,
+          scale: progress > 0 ? 1 : 0.85,
+        }}
+        transition={{ duration: 0.4, ease: "easeInOut" }}
         style={{
           position: "absolute",
-          left: 4,
-          right: 4,
-          top: "50%",
-          borderTop: `1px dashed ${
-            active ? "rgba(29,78,216,.38)" : "rgba(15,23,42,.16)"
-          }`,
+          top: 82,
+          width: 16,
+          height: 16,
+          borderRadius: 999,
+          background: "#fff",
+          border: `2px solid ${C.blue}`,
+          boxShadow: "0 0 0 4px rgba(29,78,216,.08)",
         }}
       />
-      <motion.div
-        initial={false}
-        animate={{
-          x: active ? (progress ? 16 : -2) : -18,
-          opacity: active ? 1 : 0.3,
-          scale: active ? 1 : 0.9,
-        }}
-        transition={{ duration: 0.55, ease: "easeInOut" }}
-        style={{ position: "absolute" }}
-      >
-        <LogoMark
-          size={16}
-          accent={C.blue}
-          background="rgba(255,255,255,.92)"
-          border="rgba(29,78,216,.18)"
-        />
-      </motion.div>
-    </div>
-  );
-}
-
-function LogRow({
-  time,
-  text,
-  live,
-}: {
-  time: string;
-  text: string;
-  live?: boolean;
-}) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "48px 1fr", gap: 10, alignItems: "start" }}>
-      <div className="mono" style={{ fontSize: 9, color: "rgba(15,23,42,.42)", paddingTop: 2 }}>
-        {time}
-      </div>
-      <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-        <div
-          style={{
-            width: 18,
-            height: 18,
-            borderRadius: 6,
-            background: live ? "rgba(29,78,216,.08)" : "rgba(15,23,42,.05)",
-            display: "grid",
-            placeItems: "center",
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: live ? "#22c55e" : "rgba(15,23,42,.25)",
-            }}
-          />
-        </div>
-        <div style={{ fontSize: 12, lineHeight: 1.6, color: "rgba(15,23,42,.74)" }}>
-          {text}
-        </div>
-      </div>
     </div>
   );
 }
 
 function HeroSystemAnimation() {
-  const C = useC();
   const breakpoint = useBreakpoint();
   const [roundIndex, setRoundIndex] = useState(0);
   const [stage, setStage] = useState(0);
   const isMobile = breakpoint === "xs" || breakpoint === "sm";
-  const isTablet = breakpoint === "md";
-  const isCompactDesktop = breakpoint === "lg";
   const round = HERO_ROUNDS[roundIndex];
 
   useEffect(() => {
     const timers = [
-      window.setTimeout(() => setStage(1), 500),
-      window.setTimeout(() => setStage(2), 1250),
-      window.setTimeout(() => setStage(3), 2150),
-      window.setTimeout(() => setStage(4), 3150),
+      window.setTimeout(() => setStage(1), 700),
+      window.setTimeout(() => setStage(2), 1800),
+      window.setTimeout(() => setStage(3), 3000),
     ];
 
     return () => timers.forEach(window.clearTimeout);
@@ -725,102 +694,90 @@ function HeroSystemAnimation() {
     const interval = window.setInterval(() => {
       setStage(0);
       setRoundIndex((value) => (value + 1) % HERO_ROUNDS.length);
-    }, 6400);
+    }, 6200);
 
     return () => window.clearInterval(interval);
   }, []);
 
+  const currentStep =
+    stage < 1 ? 0 : stage < 2 ? 1 : stage < 3 ? 2 : 3;
+  const connectorA = currentStep === 1 ? 0.55 : currentStep >= 2 ? 1 : 0;
+  const connectorB = currentStep === 2 ? 0.55 : currentStep >= 3 ? 1 : 0;
+
   return (
     <Frame
       style={{
-        padding: isMobile ? 14 : 18,
-        background: "linear-gradient(180deg, rgba(249,250,251,.98), rgba(241,245,249,.96))",
-        minHeight: isMobile ? undefined : 0,
-        aspectRatio: isMobile ? undefined : isTablet ? "4 / 5" : "16 / 10",
+        padding: isMobile ? 16 : 22,
+        background: "linear-gradient(180deg, rgba(207,223,231,.94), rgba(199,218,227,.96))",
+        borderRadius: 26,
       }}
     >
-      <motion.div
-        key={`${roundIndex}-${stage < 2 ? "pull" : stage < 4 ? "core" : "render"}`}
-        initial={{ opacity: 0.55, y: -4 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 10,
-          borderRadius: 999,
-          border: "1px solid rgba(29,78,216,.12)",
-          padding: "8px 12px",
-          background: "rgba(255,255,255,.88)",
-          fontSize: 10,
-          letterSpacing: ".06em",
-          textTransform: "uppercase",
-          color: "rgba(15,23,42,.56)",
-        }}
-      >
-        <LogoMark
-          size={18}
-          accent={C.blue}
-          background="rgba(29,78,216,.07)"
-          border="rgba(29,78,216,.12)"
-        />
-        <span className="mono">
-          {stage < 2
-            ? "pulling source into artefact"
-            : stage < 4
-              ? "compressing into engagement state"
-              : "rendering to sales room"}
-        </span>
-      </motion.div>
-
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr" : "0.84fr 40px 1.3fr 40px 0.84fr",
-          gap: isMobile || isTablet ? 10 : 12,
-          alignItems: "start",
-          marginTop: 18,
+          gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) 88px minmax(0, 1fr) 88px minmax(0, 1fr)",
+          gap: isMobile ? 18 : 18,
+          alignItems: "center",
+          minHeight: isMobile ? undefined : 420,
         }}
       >
-        <SourcePanel round={round} active={stage >= 1} compact={isCompactDesktop} />
-        {!isMobile && !isTablet ? <FlowConnector active={stage >= 1} progress={stage >= 2} /> : null}
-        <ArtefactPanel round={round} stage={stage} compact={isCompactDesktop} />
-        {!isMobile && !isTablet ? <FlowConnector active={stage >= 3} progress={stage >= 4} /> : null}
-        <SalesRoomPanel round={round} active={stage >= 4} compact={isCompactDesktop} />
-      </div>
-
-      <Frame
-        style={{
-          marginTop: 16,
-          padding: 14,
-          borderRadius: 18,
-          boxShadow: "none",
-          background: "rgba(255,255,255,.74)",
-        }}
-      >
-        <div
-          className="mono"
-          style={{
-            fontSize: 9,
-            letterSpacing: ".12em",
-            textTransform: "uppercase",
-            color: "rgba(15,23,42,.42)",
-            marginBottom: 10,
-          }}
-        >
-          Event log
+        <div style={{ minWidth: 0 }}>
+          <SourcePanel round={round} active={currentStep >= 1} compact />
+          {!isMobile ? (
+            <div
+              className="mono"
+              style={{
+                marginTop: 14,
+                textAlign: "center",
+                fontSize: 10,
+                letterSpacing: ".08em",
+                textTransform: "uppercase",
+                color: "rgba(15,23,42,.72)",
+              }}
+            >
+              Client portal
+            </div>
+          ) : null}
         </div>
-        <motion.div
-          key={`${roundIndex}-${round.logTime}`}
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.25 }}
-          style={{ display: "grid", gap: 10 }}
-        >
-          <LogRow time={round.logTime} text={round.logText} live />
-          <LogRow time="14:22" text="Source captured and linked to the active engagement." />
-        </motion.div>
-      </Frame>
+        {!isMobile ? <SyncConnector progress={connectorA} /> : null}
+        <div style={{ minWidth: 0 }}>
+          <ArtefactPanel round={round} stage={currentStep >= 2 ? 3 : currentStep === 1 ? 2 : 1} compact />
+          {!isMobile ? (
+            <div
+              className="mono"
+              style={{
+                marginTop: 14,
+                textAlign: "center",
+                fontSize: 10,
+                letterSpacing: ".08em",
+                textTransform: "uppercase",
+                color: "rgba(15,23,42,.72)",
+              }}
+            >
+              Board summary
+            </div>
+          ) : null}
+        </div>
+        {!isMobile ? <SyncConnector progress={connectorB} /> : null}
+        <div style={{ minWidth: 0 }}>
+          <SalesRoomPanel round={round} active={currentStep >= 3} compact />
+          {!isMobile ? (
+            <div
+              className="mono"
+              style={{
+                marginTop: 14,
+                textAlign: "center",
+                fontSize: 10,
+                letterSpacing: ".08em",
+                textTransform: "uppercase",
+                color: "rgba(15,23,42,.72)",
+              }}
+            >
+              Pitch deck
+            </div>
+          ) : null}
+        </div>
+      </div>
     </Frame>
   );
 }
@@ -831,7 +788,8 @@ export default function LandingPage() {
   const router = useRouter();
 
   const isMobile = breakpoint === "xs" || breakpoint === "sm";
-  const heroColumns = breakpoint === "lg" || breakpoint === "xl" ? "0.95fr 1.05fr" : "1fr";
+  const isDesktop = breakpoint === "lg" || breakpoint === "xl";
+  const heroColumns = isDesktop ? "minmax(0, 0.78fr) minmax(0, 1.22fr)" : "1fr";
   const renderColumns =
     breakpoint === "lg" || breakpoint === "xl"
       ? "repeat(5, minmax(0, 1fr))"
@@ -854,10 +812,11 @@ export default function LandingPage() {
   return (
     <div
       style={{
-        height: "100vh",
+        minHeight: "100%",
         overflowY: "auto",
         overflowX: "hidden",
-        background: "#f6f6f3",
+        background:
+          "radial-gradient(circle at top left, rgba(29,78,216,.07), transparent 28%), linear-gradient(180deg, #f2efe8 0%, #f6f4ef 28%, #fcfbf7 100%)",
         color: C.t1,
       }}
     >
@@ -867,13 +826,13 @@ export default function LandingPage() {
           top: 0,
           zIndex: 30,
           backdropFilter: "blur(18px)",
-          background: "rgba(246,246,243,.82)",
+          background: "rgba(242,239,232,.76)",
           borderBottom: `1px solid ${C.sep}`,
         }}
       >
         <div
           style={{
-            maxWidth: 1220,
+            maxWidth: 1280,
             margin: "0 auto",
             padding: isMobile ? "16px" : "16px 24px",
             display: "flex",
@@ -898,13 +857,13 @@ export default function LandingPage() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: isMobile ? 10 : 18,
+              gap: isMobile ? 10 : 14,
               color: "rgba(15,23,42,.62)",
               fontSize: 12,
             }}
           >
             {!isMobile
-              ? navItems.map((item) => (
+              ? navItems.slice(0, 2).map((item) => (
                   <a key={item.href} href={item.href}>
                     {item.label}
                   </a>
@@ -932,123 +891,146 @@ export default function LandingPage() {
 
       <section
         style={{
-          padding: isMobile ? "32px 16px 40px" : "48px 24px 56px",
-          borderBottom: `1px solid ${C.sep}`,
+          padding: isMobile ? "24px 16px 48px" : "34px 24px 72px",
         }}
       >
         <div
           style={{
-            maxWidth: 1220,
+            maxWidth: 1460,
             margin: "0 auto",
             display: "grid",
             gridTemplateColumns: heroColumns,
-            gap: 20,
-            alignItems: "stretch",
+            gap: isMobile ? 18 : 28,
+            alignItems: "center",
           }}
         >
-          <Frame
-            style={{
-              padding: isMobile ? 24 : "36px 34px",
-              background: "linear-gradient(180deg, rgba(255,255,255,.94), rgba(247,248,250,.94))",
-            }}
-          >
-            <div
-              className="mono"
+          <div style={{ minWidth: 0 }}>
+            <Frame
               style={{
-                fontSize: 10,
-                letterSpacing: ".14em",
-                textTransform: "uppercase",
-                color: "rgba(15,23,42,.46)",
-                marginBottom: 22,
+                padding: isMobile ? 24 : "40px 38px",
+                background: "linear-gradient(180deg, rgba(255,255,255,.97), rgba(249,248,245,.94))",
+                position: "relative",
+                overflow: "hidden",
               }}
             >
-              For boutique consultancies
-            </div>
-            <h1
-              style={{
-                fontSize: "clamp(42px, 7vw, 78px)",
-                lineHeight: 0.94,
-                letterSpacing: "-.075em",
-                fontWeight: 500,
-                color: C.t1,
-                maxWidth: 560,
-              }}
-            >
-              Pull live work into the artefact, then render it into a{" "}
-              <span style={{ color: "rgba(15,23,42,.38)" }}>sales room.</span>
-            </h1>
-            <p
-              style={{
-                fontSize: 16,
-                lineHeight: 1.8,
-                color: "rgba(15,23,42,.7)",
-                maxWidth: 500,
-                marginTop: 20,
-              }}
-            >
-              Calls, Slack threads, and decisions become structured engagement memory. The same
-              artefact that keeps delivery clean becomes a prospect-facing proof surface for the
-              next sale.
-            </p>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                flexWrap: "wrap",
-                marginTop: 28,
-              }}
-            >
-              <button
-                onClick={() => router.push("/create")}
+              <div
                 style={{
-                  border: "none",
-                  borderRadius: 999,
-                  background: C.t1,
-                  color: "#f6f6f3",
-                  padding: "14px 20px",
-                  fontSize: 12,
-                  letterSpacing: ".1em",
-                  textTransform: "uppercase",
+                  position: "absolute",
+                  inset: "auto -10% -22% auto",
+                  width: isMobile ? 220 : 320,
+                  height: isMobile ? 220 : 320,
+                  borderRadius: "50%",
+                  background: "radial-gradient(circle, rgba(29,78,216,.12), transparent 68%)",
+                  pointerEvents: "none",
                 }}
-              >
-                Preview the system
-              </button>
-              <a
-                href="#problem"
+              />
+              <div
+                className="mono"
                 style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 10,
+                  fontSize: 10,
+                  letterSpacing: ".14em",
+                  textTransform: "uppercase",
+                  color: "rgba(15,23,42,.52)",
+                  marginBottom: 24,
+                  padding: "10px 12px",
                   borderRadius: 999,
                   border: `1px solid ${C.sep}`,
-                  background: "rgba(255,255,255,.88)",
-                  color: C.t1,
-                  padding: "14px 18px",
-                  fontSize: 12,
-                  letterSpacing: ".08em",
-                  textTransform: "uppercase",
+                  background: "rgba(255,255,255,.7)",
                 }}
               >
-                See how it works
-              </a>
-            </div>
-            <div
-              className="mono"
-              style={{
-                marginTop: 16,
-                fontSize: 10,
-                letterSpacing: ".08em",
-                color: "rgba(15,23,42,.42)",
-              }}
-            >
-              30-day free trial · no credit card required
-            </div>
-          </Frame>
+                <span>For boutique consultancies</span>
+              </div>
+              <h1
+                style={{
+                  fontSize: "clamp(34px, 4.4vw, 56px)",
+                  lineHeight: 0.98,
+                  letterSpacing: "-.065em",
+                  fontWeight: 500,
+                  color: C.t1,
+                  maxWidth: "8ch",
+                  textWrap: "balance",
+                }}
+              >
+                Approve a block. Every render updates.
+              </h1>
+              <p
+                style={{
+                  fontSize: 15,
+                  lineHeight: 1.7,
+                  color: "rgba(15,23,42,.7)",
+                  maxWidth: 420,
+                  marginTop: 16,
+                }}
+              >
+                Client portal. Pitch deck. Board summary. Handover doc. All live from the same source. Log it once and it&apos;s everywhere.
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  marginTop: 22,
+                }}
+              >
+                <button
+                  onClick={() => router.push("/create")}
+                  style={{
+                    border: "none",
+                    borderRadius: 999,
+                    background: C.t1,
+                    color: "#f6f6f3",
+                    padding: "14px 20px",
+                    fontSize: 12,
+                    letterSpacing: ".1em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Preview the system
+                </button>
+                <a
+                  href="#problem"
+                  style={{
+                    borderRadius: 999,
+                    border: `1px solid ${C.sep}`,
+                    background: "rgba(255,255,255,.88)",
+                    color: C.t1,
+                    padding: "14px 18px",
+                    fontSize: 12,
+                    letterSpacing: ".08em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  See how it works
+                </a>
+              </div>
+              <div
+                className="mono"
+                style={{
+                  marginTop: 14,
+                  fontSize: 10,
+                  letterSpacing: ".08em",
+                  color: "rgba(15,23,42,.42)",
+                }}
+              >
+                30-day free trial · no credit card required
+              </div>
+            </Frame>
+          </div>
 
-          <HeroSystemAnimation />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: "grid", gap: 12 }}>
+              <HeroSystemAnimation />
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="problem" style={{ padding: isMobile ? "56px 16px" : "84px 24px", borderBottom: `1px solid ${C.sep}` }}>
-        <div style={{ maxWidth: 1220, margin: "0 auto" }}>
+      <section id="problem" style={{ padding: isMobile ? "56px 16px" : "84px 24px", borderTop: `1px solid ${C.sep}`, borderBottom: `1px solid ${C.sep}` }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
           <SectionIntro
             eyebrow="The problem"
             title="When the engagement ends, most firms cannot point to a durable record of what happened."
@@ -1070,7 +1052,7 @@ export default function LandingPage() {
       </section>
 
       <section id="renders" style={{ padding: isMobile ? "56px 16px" : "84px 24px", borderBottom: `1px solid ${C.sep}` }}>
-        <div style={{ maxWidth: 1220, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
           <SectionIntro
             eyebrow="Five renders"
             title="Same data. Different surface."
@@ -1093,8 +1075,8 @@ export default function LandingPage() {
       </section>
 
       <section id="how" style={{ padding: isMobile ? "56px 16px" : "84px 24px", borderBottom: `1px solid ${C.sep}` }}>
-        <div style={{ maxWidth: 1220, margin: "0 auto", display: "grid", gridTemplateColumns: heroColumns, gap: 18, alignItems: "start" }}>
-          <div>
+        <div style={{ maxWidth: 1280, margin: "0 auto", display: "grid", gridTemplateColumns: heroColumns, gap: 18, alignItems: "start" }}>
+          <div style={{ minWidth: 0 }}>
             <SectionIntro
               eyebrow="AI ingestion"
               title="A 45-minute call becomes a few typed blocks, not a wall of transcript."
@@ -1102,7 +1084,7 @@ export default function LandingPage() {
             />
           </div>
 
-          <Frame style={{ padding: 20 }}>
+          <Frame style={{ padding: 20, minWidth: 0 }}>
             <div className="mono" style={{ fontSize: 9, letterSpacing: ".12em", textTransform: "uppercase", color: "rgba(15,23,42,.42)", marginBottom: 14 }}>
               Compression
             </div>
@@ -1145,7 +1127,7 @@ export default function LandingPage() {
       </section>
 
       <section id="pricing" style={{ padding: isMobile ? "56px 16px 80px" : "84px 24px 96px" }}>
-        <div style={{ maxWidth: 1220, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
           <SectionIntro
             eyebrow="Pricing"
             title="No per-engagement tax."
