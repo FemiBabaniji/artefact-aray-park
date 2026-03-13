@@ -154,8 +154,8 @@ export function ExpandedArtefact({
           {state.identity.name || "Untitled"}
         </span>
 
-        {/* Mode toggle: Workspace | Page */}
-        {!isMobile && (
+        {/* Mode toggle: Workspace | Page - hide in readOnly */}
+        {!isMobile && !readOnly && (
           <div style={{
             display: "flex",
             marginLeft: 12,
@@ -188,8 +188,8 @@ export function ExpandedArtefact({
           </div>
         )}
 
-        {/* Layout toggle (only in workspace mode) */}
-        {!isMobile && mode === "workspace" && (
+        {/* Layout toggle (only in workspace mode) - hide in readOnly */}
+        {!isMobile && !readOnly && mode === "workspace" && (
           <div style={{
             display: "flex",
             border: `1px solid ${C.sep}`,
@@ -220,9 +220,12 @@ export function ExpandedArtefact({
           </div>
         )}
 
-        <Btn onClick={onCollapse} style={{ marginLeft: isMobile ? "auto" : 8, fontSize: isMobile ? 8 : 9 }}>
-          &larr; {isMobile ? "back" : "collapse"}
-        </Btn>
+        {/* Collapse button - hide in readOnly */}
+        {!readOnly && (
+          <Btn onClick={onCollapse} style={{ marginLeft: isMobile ? "auto" : 8, fontSize: isMobile ? 8 : 9 }}>
+            &larr; {isMobile ? "back" : "collapse"}
+          </Btn>
+        )}
       </div>
 
       {/* Main card */}
@@ -635,50 +638,105 @@ export function ExpandedArtefact({
                     flex: 1,
                     display: "flex",
                     flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    alignItems: readOnly ? "stretch" : "center",
+                    justifyContent: readOnly ? "flex-start" : "center",
                     gap: isMobile ? 12 : 16,
                     color: C.t3,
                     padding: isMobile ? 16 : 32,
-                    textAlign: "center",
+                    textAlign: readOnly ? "left" : "center",
+                    overflow: readOnly ? "auto" : "visible",
                   }}
                 >
-                  <div style={{ fontSize: isMobile ? 14 : 18, color: C.t1, fontWeight: 500 }}>
-                    Welcome to your artefact
-                  </div>
-                  <div style={{ fontSize: fontSize.body, lineHeight: 1.6, maxWidth: 300 }}>
-                    Click <strong>identity</strong> to add your details, or
-                    select a <strong>room</strong> to start adding content.
-                  </div>
-                  <div
-                    style={{
-                      marginTop: isMobile ? 12 : 16,
-                      display: "flex",
-                      gap: 6,
-                      flexWrap: "wrap",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {state.rooms.slice(0, isMobile ? 3 : 4).map((room) => (
-                      <motion.button
-                        key={room.id}
-                        onClick={() => handleRoomSelect(room.id)}
-                        whileHover={{ opacity: 0.8 }}
-                        whileTap={{ scale: 0.97 }}
+                  {readOnly ? (
+                    /* Preview mode - show artefact summary */
+                    <>
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: isMobile ? 16 : 20, color: C.t1, fontWeight: 600, marginBottom: 4 }}>
+                          {state.identity.name || "Artefact Preview"}
+                        </div>
+                        {state.identity.title && (
+                          <div style={{ fontSize: fontSize.body, color: C.t3 }}>
+                            {state.identity.title}
+                          </div>
+                        )}
+                        {state.identity.bio && (
+                          <div style={{ fontSize: fontSize.small, color: C.t4, marginTop: 6, lineHeight: 1.5 }}>
+                            {state.identity.bio}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {state.rooms.map((room) => (
+                          <motion.div
+                            key={room.id}
+                            onClick={() => handleRoomSelect(room.id)}
+                            whileHover={{ background: C.bg }}
+                            style={{
+                              padding: isMobile ? "10px 12px" : "12px 16px",
+                              border: `1px solid ${C.sep}`,
+                              borderRadius: 8,
+                              cursor: "pointer",
+                              background: "transparent",
+                            }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                              <span style={{ fontSize: fontSize.body, color: C.t1, fontWeight: 500 }}>{room.label}</span>
+                              {room.blocks.length > 0 && (
+                                <span style={{ fontSize: fontSize.small - 1, color: C.green, background: `${C.green}22`, padding: "2px 6px", borderRadius: 4 }}>
+                                  {room.blocks.length}
+                                </span>
+                              )}
+                            </div>
+                            {room.blocks[0]?.content && (
+                              <div style={{ fontSize: fontSize.small, color: C.t4, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                                {room.blocks[0].content}
+                              </div>
+                            )}
+                          </motion.div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    /* Edit mode - show welcome message */
+                    <>
+                      <div style={{ fontSize: isMobile ? 14 : 18, color: C.t1, fontWeight: 500 }}>
+                        Welcome to your artefact
+                      </div>
+                      <div style={{ fontSize: fontSize.body, lineHeight: 1.6, maxWidth: 300 }}>
+                        Click <strong>identity</strong> to add your details, or
+                        select a <strong>room</strong> to start adding content.
+                      </div>
+                      <div
                         style={{
-                          padding: isMobile ? "6px 12px" : "8px 16px",
-                          border: `1px solid ${C.sep}`,
-                          borderRadius: 8,
-                          background: "transparent",
-                          color: C.t2,
-                          fontSize: fontSize.body - 1,
-                          cursor: "pointer",
+                          marginTop: isMobile ? 12 : 16,
+                          display: "flex",
+                          gap: 6,
+                          flexWrap: "wrap",
+                          justifyContent: "center",
                         }}
                       >
-                        {room.label}
-                      </motion.button>
-                    ))}
-                  </div>
+                        {state.rooms.slice(0, isMobile ? 3 : 4).map((room) => (
+                          <motion.button
+                            key={room.id}
+                            onClick={() => handleRoomSelect(room.id)}
+                            whileHover={{ opacity: 0.8 }}
+                            whileTap={{ scale: 0.97 }}
+                            style={{
+                              padding: isMobile ? "6px 12px" : "8px 16px",
+                              border: `1px solid ${C.sep}`,
+                              borderRadius: 8,
+                              background: "transparent",
+                              color: C.t2,
+                              fontSize: fontSize.body - 1,
+                              cursor: "pointer",
+                            }}
+                          >
+                            {room.label}
+                          </motion.button>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               )}
 

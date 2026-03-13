@@ -6,8 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useC, useTheme } from "@/hooks/useC";
 import { FADE } from "@/lib/motion";
 import { Lbl } from "@/components/primitives/Lbl";
-import { CompactCard, ExpandedArtefact } from "@/components/create/components";
-import { useCardColors } from "@/components/create/hooks";
+import { useCardColors } from "@/components/artefact/hooks/useCardColors";
+import { CompactRenderer } from "@/components/artefact/views/renderers/CompactRenderer";
+import { ExpandedRenderer } from "@/components/artefact/views/renderers/ExpandedRenderer";
 import { GuestArtefactCtx, type GuestArtefactContextValue } from "@/context/GuestArtefactContext";
 import type { GuestArtefactState, StandaloneRoom, Identity } from "@/types/artefact";
 import type { ArtefactState, LifecycleState } from "@/types/events";
@@ -1252,7 +1253,7 @@ function MockGuestArtefactProvider({
   return <GuestArtefactCtx.Provider value={value}>{children}</GuestArtefactCtx.Provider>;
 }
 
-// ── Artefact Preview using ExpandedArtefact ───────────────────────────────────
+// ── Artefact Preview using canonical artefact renderers ──────────────────────
 
 function ArtefactPreviewInner({
   accent,
@@ -1277,7 +1278,7 @@ function ArtefactPreviewInner({
 }) {
   return (
     <div style={fullscreen ? { width: "100%", height: "100%", display: "flex", flexDirection: "column" } : { transform: "scale(0.65)", transformOrigin: "center center" }}>
-      <ExpandedArtefact
+      <ExpandedRenderer
         accent={accent}
         cardBg={cardBg}
         colorId={colorId}
@@ -1374,7 +1375,7 @@ function ArtefactPreview({
   }
 
   return (
-    <CompactCard
+    <CompactRenderer
       identity={mockIdentity}
       rooms={mockRooms}
       accent={cc.accent}

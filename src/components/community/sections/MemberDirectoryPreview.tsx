@@ -5,8 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useC, useTheme } from "@/hooks/useC";
 import { SPF } from "@/lib/motion";
 import { Lbl } from "@/components/primitives/Lbl";
-import { CompactCard, ExpandedArtefact } from "@/components/create/components";
-import { useCardColors } from "@/components/create/hooks";
+import { CompactCard, ExpandedArtefact, useCardColors } from "@/components/artefact";
 import { GuestArtefactCtx, type GuestArtefactContextValue } from "@/context/GuestArtefactContext";
 import type { GuestArtefactState } from "@/types/artefact";
 import type { ArtefactState } from "@/types/events";
@@ -521,9 +520,9 @@ export function MemberDirectoryPreview({ compact = false, onMemberSelect }: Memb
               {filteredMembers.map((member) => {
                 const color = getMemberColor(member);
                 const mockRooms = [
-                  { id: "about", blocks: [{ id: "1" }, { id: "2" }] },
-                  { id: member.company.toLowerCase(), blocks: [{ id: "3" }] },
-                  { id: "pitch", blocks: [] },
+                  { id: "about", label: "About", blocks: [{ id: "1", blockType: "text" as const, orderIndex: 0 }, { id: "2", blockType: "text" as const, orderIndex: 1 }] },
+                  { id: member.company.toLowerCase(), label: member.company, blocks: [{ id: "3", blockType: "text" as const, orderIndex: 0 }] },
+                  { id: "pitch", label: "Pitch", blocks: [] },
                 ];
                 return (
                   <CompactCard
@@ -531,6 +530,10 @@ export function MemberDirectoryPreview({ compact = false, onMemberSelect }: Memb
                     identity={{
                       name: member.name,
                       title: `${member.role} at ${member.company}`,
+                      bio: "",
+                      location: "",
+                      skills: [],
+                      links: [],
                     }}
                     rooms={mockRooms}
                     accent={color.accent}

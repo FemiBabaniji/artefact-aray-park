@@ -20,7 +20,11 @@ export type BlockType =
   | "experience"
   | "education"
   | "certification"
-  | "relationship";
+  | "relationship"
+  // Engagement-specific block types
+  | "decision"
+  | "file"
+  | "outcome";
 
 // Field types for structured rooms
 export type FieldType = "text" | "longtext" | "number" | "date" | "file" | "url" | "select" | "boolean";

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@composio/client": "^0.1.0-alpha.61",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -29,6 +30,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "resend": "^6.9.3",
+    "simple-icons": "^16.11.0",
     "tailwind-merge": "^3.5.0",
     "unpdf": "^1.4.0",
     "usehooks-ts": "^3.1.1",

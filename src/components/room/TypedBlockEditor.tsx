@@ -503,6 +503,10 @@ const BLOCK_TYPE_CONFIG: Record<BlockType, { icon: string; label: string; color:
   education: { icon: "\u2302", label: "Education", color: "#8b5cf6", description: "Share your academic background", hint: "List degrees, institutions, and accomplishments" },
   certification: { icon: "\u2714", label: "Certification", color: "#06b6d4", description: "Display professional credentials", hint: "Add certifications with issuing organizations and dates" },
   relationship: { icon: "\u2194", label: "Connection", color: "#ec4899", description: "Reference people in your network", hint: "Mentors, collaborators, or professional connections" },
+  // Engagement-specific block types
+  decision: { icon: "\u2713", label: "Decision", color: "#22c55e", description: "Record a decision made during the engagement", hint: "Document the decision, rationale, and attendees" },
+  file: { icon: "\u2191", label: "File", color: "#f97316", description: "Attach a file or document", hint: "Upload deliverables, reports, or other files" },
+  outcome: { icon: "\u2605", label: "Outcome", color: "#8b5cf6", description: "Record an outcome or result", hint: "Document results achieved and metrics" },
 };
 
 export function TypedBlockEditor({ blockType, content, onChange, onDelete, readOnly }: TypedBlockEditorProps) {
